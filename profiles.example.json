@@ -1,0 +1,16 @@
+[
+  {
+    "nombre": "Ejemplo - Comcel Costa Rica",
+    "llaveAes": "REEMPLAZA_ESTA_LLAVE_POR_32BYTE",
+    "idClienteDefault": 7,
+    "idTransaccionDefault": 14,
+    "ipClienteDefault": "172.17.0.4"
+  },
+  {
+    "nombre": "Ejemplo - Otro comercio/ambiente",
+    "llaveAes": "OTRA_LLAVE_DE_32_BYTES_AQUI!!!!",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 1,
+    "ipClienteDefault": "172.17.0.4"
+  }
+]

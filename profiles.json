@@ -1,0 +1,9 @@
+[
+  {
+    "nombre": "Reval",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 14,
+    "ipClienteDefault": "172.17.0.4"
+  }
+]

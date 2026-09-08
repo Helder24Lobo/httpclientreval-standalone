@@ -3,3 +3,6 @@
 out/
 build/
 *.iml
+
+# Contiene llaves AES reales de negocio; usa profiles.example.json como plantilla.
+profiles.json

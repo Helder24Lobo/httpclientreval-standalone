@@ -1,6 +1,6 @@
 [
   {
-    "nombre": "Reval - Consulta Contenido Digital y Operadores",
+    "nombre": " Consulta Contenido Digital y Operadores",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 1,
@@ -21,7 +21,7 @@
     }
   },
   {
-    "nombre": "Reval - Consulta Detalle Contenido Digital",
+    "nombre": " Consulta Detalle Contenido Digital",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 2,
@@ -42,7 +42,7 @@
     }
   },
   {
-    "nombre": "Reval - Compra Contenido Digital",
+    "nombre": " Compra Contenido Digital",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 5,
@@ -67,7 +67,7 @@
     }
   },
   {
-    "nombre": "Reval - Consulta Detalle Operador",
+    "nombre": " Consulta Detalle Operador",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 3,
@@ -91,7 +91,7 @@
     }
   },
   {
-    "nombre": "Reval - Compra Paquete Operador",
+    "nombre": " Compra Paquete Operador",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 6,
@@ -115,7 +115,7 @@
     }
   },
   {
-    "nombre": "Reval - P.O - Consulta Detalle Operador",
+    "nombre": " P.O - Consulta Detalle Operador",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 3,
@@ -139,7 +139,7 @@
     }
   },
   {
-    "nombre": "Reval - P.O - Compra Paquete Operador",
+    "nombre": " P.O Compra Paquete Operador",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 6,
@@ -163,7 +163,7 @@
     }
   },
   {
-    "nombre": "Reval - P.O - Consulta Contenido Digital y Operadores",
+    "nombre": " P.O - Consulta Contenido Digital y Operadores",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 1,
@@ -187,7 +187,7 @@
     }
   },
   {
-    "nombre": "Reval - Pago Convenios",
+    "nombre": " Pago Convenios",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 15,
@@ -197,6 +197,7 @@
     "bodyMensajeDefault": {
       "Convenio": "12167",
       "IdPersona": "226",
+      "IdTransaccion": "138564",
       "Referencia1": "85802044",
       "Referencia2": "8200131855",
       "Referencia12": "0",
@@ -210,7 +211,7 @@
     }
   },
   {
-    "nombre": "Reval - Consulta Recaudo de Convenios",
+    "nombre": " Consulta Recaudo de Convenios",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 14,

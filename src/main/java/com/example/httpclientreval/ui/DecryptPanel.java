@@ -40,10 +40,17 @@ public class DecryptPanel extends JPanel {
         JButton descifrar = new JButton("Descifrar");
         descifrar.addActionListener(e -> descifrar());
 
+        JButton limpiar = new JButton("Limpiar");
+        limpiar.addActionListener(e -> limpiar());
+
         error.setForeground(Color.RED);
+        JPanel botones = new JPanel();
+        botones.add(descifrar);
+        botones.add(limpiar);
+
         JPanel accion = new JPanel(new BorderLayout());
         accion.add(error, BorderLayout.CENTER);
-        accion.add(descifrar, BorderLayout.EAST);
+        accion.add(botones, BorderLayout.EAST);
 
         JPanel centro = new JPanel(new BorderLayout(4, 4));
         centro.add(norte, BorderLayout.CENTER);
@@ -65,5 +72,11 @@ public class DecryptPanel extends JPanel {
         } catch (Exception ex) {
             error.setText("Error: " + ex.getMessage());
         }
+    }
+
+    private void limpiar() {
+        entrada.setText("");
+        salida.setTexto("");
+        error.setText(" ");
     }
 }

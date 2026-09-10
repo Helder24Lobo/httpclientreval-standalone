@@ -4,7 +4,9 @@ import com.example.httpclientreval.crypto.AES256CBC;
 import com.example.httpclientreval.model.Envelope;
 import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
+import com.example.httpclientreval.model.SoapHttpClient;
 import com.example.httpclientreval.model.SoapRequestBuilder;
+import com.example.httpclientreval.model.SoapResponseParser;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -13,6 +15,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
@@ -34,17 +37,21 @@ public class EncryptPanel extends JPanel {
     private final OutputBlock salidaMensaje = new OutputBlock("_mensaje (Base64)");
     private final OutputBlock salidaSobre = new OutputBlock("Sobre JSON");
     private final OutputBlock salidaSoap = new OutputBlock("XML SOAP (Postman)");
+    private final OutputBlock salidaHttp = new OutputBlock("Respuesta HTTP");
+    private final OutputBlock salidaResultCifrado = new OutputBlock("OBJRequestResult (cifrado)");
+    private final OutputBlock salidaResultPlano = new OutputBlock("Respuesta en claro");
     private final Profile perfil;
+    private final MensajeNegocio.BodyMensaje bodyDefaults;
+    private final MensajeNegocio.HeaderMensaje headerDefaults;
+    private String ultimoSoapGenerado;
 
     public EncryptPanel(Profile perfil) {
         super(new BorderLayout(8, 8));
         this.perfil = perfil;
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        MensajeNegocio.BodyMensaje bodyDefaults =
-                perfil.bodyMensajeDefault != null ? perfil.bodyMensajeDefault : new MensajeNegocio.BodyMensaje();
-        MensajeNegocio.HeaderMensaje headerDefaults =
-                perfil.headerMensajeDefault != null ? perfil.headerMensajeDefault : new MensajeNegocio.HeaderMensaje();
+        bodyDefaults = perfil.bodyMensajeDefault != null ? perfil.bodyMensajeDefault : new MensajeNegocio.BodyMensaje();
+        headerDefaults = perfil.headerMensajeDefault != null ? perfil.headerMensajeDefault : new MensajeNegocio.HeaderMensaje();
 
         JTabbedPane tabsEntrada = new JTabbedPane();
         tabsEntrada.addTab("Sobre (_header)", crearPanelSobre(perfil));
@@ -54,10 +61,21 @@ public class EncryptPanel extends JPanel {
         JButton generar = new JButton("Generar");
         generar.addActionListener(e -> generar());
 
+        JButton enviar = new JButton("Enviar al WS");
+        enviar.addActionListener(e -> enviarAlWs());
+
+        JButton limpiar = new JButton("Limpiar");
+        limpiar.addActionListener(e -> limpiar());
+
         error.setForeground(Color.RED);
+        JPanel botones = new JPanel();
+        botones.add(generar);
+        botones.add(enviar);
+        botones.add(limpiar);
+
         JPanel accion = new JPanel(new BorderLayout());
         accion.add(error, BorderLayout.CENTER);
-        accion.add(generar, BorderLayout.EAST);
+        accion.add(botones, BorderLayout.EAST);
 
         JPanel centro = new JPanel(new BorderLayout(4, 4));
         centro.add(tabsEntrada, BorderLayout.CENTER);
@@ -67,6 +85,9 @@ public class EncryptPanel extends JPanel {
         tabsSalida.addTab("_mensaje", salidaMensaje);
         tabsSalida.addTab("Sobre", salidaSobre);
         tabsSalida.addTab("XML SOAP", salidaSoap);
+        tabsSalida.addTab("Respuesta HTTP", salidaHttp);
+        tabsSalida.addTab("OBJRequestResult", salidaResultCifrado);
+        tabsSalida.addTab("Respuesta en claro", salidaResultPlano);
         tabsSalida.setPreferredSize(new Dimension(100, 240));
 
         add(centro, BorderLayout.CENTER);
@@ -202,11 +223,103 @@ public class EncryptPanel extends JPanel {
             salidaMensaje.setTexto(mensajeCifrado);
             salidaSobre.setTexto(sobreCompleto);
             salidaSoap.setTexto(soapCompleto);
+            ultimoSoapGenerado = soapCompleto;
             error.setText(" ");
         } catch (NumberFormatException ex) {
             error.setText("IdCliente e IdTransaccion (sobre) deben ser números enteros.");
         } catch (Exception ex) {
             error.setText("Error: " + ex.getMessage());
         }
+    }
+
+    private void enviarAlWs() {
+        if (ultimoSoapGenerado == null) {
+            error.setText("Primero presiona Generar.");
+            return;
+        }
+
+        error.setText("Enviando al WS...");
+        salidaHttp.setTexto("");
+        salidaResultCifrado.setTexto("");
+        salidaResultPlano.setTexto("");
+
+        new SwingWorker<SoapHttpClient.Respuesta, Void>() {
+            @Override
+            protected SoapHttpClient.Respuesta doInBackground() throws Exception {
+                return SoapHttpClient.enviar(ultimoSoapGenerado);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    SoapHttpClient.Respuesta respuesta = get();
+                    salidaHttp.setTexto("HTTP " + respuesta.statusCode + "\n\n" + respuesta.cuerpo);
+
+                    String resultCifrado = SoapResponseParser.extraerObjRequestResult(respuesta.cuerpo);
+                    if (resultCifrado == null) {
+                        salidaResultCifrado.setTexto("(No se encontró OBJRequestResult en la respuesta)");
+                    } else {
+                        salidaResultCifrado.setTexto(resultCifrado);
+                        try {
+                            salidaResultPlano.setTexto(AES256CBC.decryptWithPrependedIV(resultCifrado, perfil.llaveAes));
+                        } catch (Exception exDescifrado) {
+                            salidaResultPlano.setTexto("No se pudo descifrar: " + exDescifrado.getMessage());
+                        }
+                    }
+                    error.setText(" ");
+                } catch (Exception ex) {
+                    Throwable causa = ex.getCause() != null ? ex.getCause() : ex;
+                    error.setText("Error al enviar: " + causa.getMessage());
+                }
+            }
+        }.execute();
+    }
+
+    /** Vuelve todos los campos a los defaults del perfil y borra las salidas, para armar la siguiente transacción. */
+    private void limpiar() {
+        campos.get("IdCliente").setText(String.valueOf(perfil.idClienteDefault));
+        campos.get("IdTransaccion (sobre)").setText(String.valueOf(perfil.idTransaccionDefault));
+        campos.get("IpCliente").setText(perfil.ipClienteDefault);
+
+        campos.get("Autorizacion").setText(bodyDefaults.autorizacion);
+        campos.get("CodBarras").setText(bodyDefaults.codBarras);
+        campos.get("Convenio").setText(bodyDefaults.convenio);
+        campos.get("FechaVencimiento").setText(bodyDefaults.fechaVencimiento);
+        campos.get("Iac").setText(bodyDefaults.iac);
+        campos.get("IdPersona").setText(bodyDefaults.idPersona);
+        campos.get("IdTransaccion (negocio)").setText(bodyDefaults.idTransaccion);
+        campos.get("NoIdentificacionUsuario").setText(bodyDefaults.noIdentificacionUsuario);
+        campos.get("NombreUsuario").setText(bodyDefaults.nombreUsuario);
+        campos.get("NumCelular").setText(bodyDefaults.numCelular);
+        campos.get("Observacion").setText(bodyDefaults.observacion);
+        campos.get("Otp").setText(bodyDefaults.otp);
+        campos.get("TipoIdentificacion").setText(bodyDefaults.tipoIdentificacion);
+        campos.get("Valor").setText(bodyDefaults.valor);
+        campos.get("NoIdentificacionCajero").setText(headerDefaults.noIdentificacionCajero);
+
+        campos.get("Referencia1").setText(bodyDefaults.referencia1);
+        campos.get("Referencia2").setText(bodyDefaults.referencia2);
+        campos.get("Referencia3").setText(bodyDefaults.referencia3);
+        campos.get("Referencia4").setText(bodyDefaults.referencia4);
+        campos.get("Referencia5").setText(bodyDefaults.referencia5);
+        campos.get("Referencia6").setText(bodyDefaults.referencia6);
+        campos.get("Referencia7").setText(bodyDefaults.referencia7);
+        campos.get("Referencia8").setText(bodyDefaults.referencia8);
+        campos.get("Referencia9").setText(bodyDefaults.referencia9);
+        campos.get("Referencia10").setText(bodyDefaults.referencia10);
+        campos.get("Referencia11").setText(bodyDefaults.referencia11);
+        campos.get("Referencia12").setText(bodyDefaults.referencia12);
+        campos.get("Referencia13").setText(bodyDefaults.referencia13);
+        campos.get("Referencia14").setText(bodyDefaults.referencia14);
+        campos.get("Referencia15").setText(bodyDefaults.referencia15);
+
+        salidaMensaje.setTexto("");
+        salidaSobre.setTexto("");
+        salidaSoap.setTexto("");
+        salidaHttp.setTexto("");
+        salidaResultCifrado.setTexto("");
+        salidaResultPlano.setTexto("");
+        ultimoSoapGenerado = null;
+        error.setText(" ");
     }
 }

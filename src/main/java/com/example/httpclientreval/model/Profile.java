@@ -11,11 +11,16 @@ import java.nio.file.Path;
 import java.util.List;
 
 /**
- * Perfil reutilizable (llave AES + valores por defecto del header del sobre),
- * para no tener que quemar esos datos en el código cada vez que se cifra o
- * descifra algo. Se cargan desde profiles.json (ver profiles.example.json
- * como plantilla); profiles.json está en .gitignore para que ningún secreto
- * real quede commiteado.
+ * Perfil reutilizable: llave AES + valores por defecto del header del sobre,
+ * y opcionalmente los valores por defecto del _BodyMensaje/_headerMensaje
+ * propios de una transacción (bodyMensajeDefault/headerMensajeDefault). Un
+ * mismo entorno con 11 transacciones distintas se modela como 11 perfiles
+ * (misma llaveAes, distinto bodyMensajeDefault cada uno).
+ *
+ * Se cargan desde profiles.json (ver profiles.example.json como plantilla);
+ * profiles.json está en .gitignore para que ningún secreto real quede
+ * commiteado. Si un perfil no trae bodyMensajeDefault/headerMensajeDefault,
+ * se usan los defaults genéricos de MensajeNegocio.
  */
 public class Profile {
 
@@ -33,6 +38,18 @@ public class Profile {
 
     @SerializedName("ipClienteDefault")
     public String ipClienteDefault;
+
+    @SerializedName("wsseUsername")
+    public String wsseUsername;
+
+    @SerializedName("wssePassword")
+    public String wssePassword;
+
+    @SerializedName("bodyMensajeDefault")
+    public MensajeNegocio.BodyMensaje bodyMensajeDefault;
+
+    @SerializedName("headerMensajeDefault")
+    public MensajeNegocio.HeaderMensaje headerMensajeDefault;
 
     public static List<Profile> loadAll(Path archivo) throws IOException {
         if (!Files.exists(archivo)) {

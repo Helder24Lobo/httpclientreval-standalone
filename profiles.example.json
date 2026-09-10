@@ -1,16 +1,37 @@
 [
   {
-    "nombre": "Ejemplo - Comcel Costa Rica",
+    "nombre": "Ejemplo - Recarga Comcel",
     "llaveAes": "REEMPLAZA_ESTA_LLAVE_POR_32BYTE",
     "idClienteDefault": 7,
     "idTransaccionDefault": 14,
-    "ipClienteDefault": "172.17.0.4"
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "REEMPLAZA_CON_USUARIO_WS",
+    "wssePassword": "REEMPLAZA_CON_PASSWORD_WS",
+    "bodyMensajeDefault": {
+      "IdPersona": "226",
+      "Referencia1": "comcel",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "3"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
   },
   {
-    "nombre": "Ejemplo - Otro comercio/ambiente",
-    "llaveAes": "OTRA_LLAVE_DE_32_BYTES_AQUI!!!!",
-    "idClienteDefault": 26,
-    "idTransaccionDefault": 1,
-    "ipClienteDefault": "172.17.0.4"
+    "nombre": "Ejemplo - Otra transaccion (Convenio X)",
+    "llaveAes": "REEMPLAZA_ESTA_LLAVE_POR_32BYTE",
+    "idClienteDefault": 7,
+    "idTransaccionDefault": 14,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "REEMPLAZA_CON_USUARIO_WS",
+    "wssePassword": "REEMPLAZA_CON_PASSWORD_WS",
+    "bodyMensajeDefault": {
+      "IdPersona": "301",
+      "Convenio": "CONVENIO_X",
+      "Referencia1": "otro-negocio",
+      "TipoIdentificacion": "01"
+    }
   }
 ]

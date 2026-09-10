@@ -52,7 +52,7 @@ public class MensajeNegocio {
         public String otp = "";
 
         @SerializedName("Referencia1")
-        public String referencia1 = "comcel";
+        public String referencia1 = "";
 
         @SerializedName("Referencia2")
         public String referencia2 = "";

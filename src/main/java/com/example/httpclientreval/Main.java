@@ -4,6 +4,7 @@ import com.example.httpclientreval.crypto.AES256CBC;
 import com.example.httpclientreval.model.Envelope;
 import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
+import com.example.httpclientreval.model.SoapRequestBuilder;
 import com.example.httpclientreval.ui.MensajeNegocioForm;
 
 import java.nio.file.Path;
@@ -84,9 +85,14 @@ public class Main {
     }
 
     private static void encrypt(Scanner scanner, Profile perfil) throws Exception {
+        MensajeNegocio.BodyMensaje bodyDefaults =
+                perfil.bodyMensajeDefault != null ? perfil.bodyMensajeDefault : new MensajeNegocio.BodyMensaje();
+        MensajeNegocio.HeaderMensaje headerDefaults =
+                perfil.headerMensajeDefault != null ? perfil.headerMensajeDefault : new MensajeNegocio.HeaderMensaje();
+
         MensajeNegocioForm.Resultado datos = MensajeNegocioForm.mostrar(
-                new MensajeNegocio.BodyMensaje(),
-                new MensajeNegocio.HeaderMensaje(),
+                bodyDefaults,
+                headerDefaults,
                 perfil.idClienteDefault,
                 perfil.idTransaccionDefault,
                 perfil.ipClienteDefault);
@@ -108,5 +114,11 @@ public class Main {
         System.out.println();
         System.out.println("=== SOBRE COMPLETO (pegar dentro de <tem:data> del XML SOAP) ===");
         System.out.println(sobreCompleto);
+
+        String soapCompleto = SoapRequestBuilder.build(perfil.wsseUsername, perfil.wssePassword, sobreCompleto);
+
+        System.out.println();
+        System.out.println("=== XML SOAP COMPLETO (pegar directo en el body de Postman) ===");
+        System.out.println(soapCompleto);
     }
 }

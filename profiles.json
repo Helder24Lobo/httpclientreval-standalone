@@ -1,9 +1,232 @@
 [
   {
-    "nombre": "Reval",
+    "nombre": "Reval - Consulta Contenido Digital y Operadores",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 1,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "IdPersona": "1347854",
+      "IdTransaccion": "41472",
+      "Referencia8": "2",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "0"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
+  },
+  {
+    "nombre": "Reval - Consulta Detalle Contenido Digital",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 2,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "IdPersona": "1347854",
+      "IdTransaccion": "41472",
+      "Referencia8": "2",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "0"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
+  },
+  {
+    "nombre": "Reval - Compra Contenido Digital",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 5,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "Iac": "799366584865",
+      "IdPersona": "1347854",
+      "IdTransaccion": "41472",
+      "NumCelular": "3125763074",
+      "Referencia2": "flopez@reval.com.co",
+      "Referencia5": "Pin virtual Play Station Plus 1 Mes",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "0",
+      "Valor": "32900"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
+  },
+  {
+    "nombre": "Reval - Consulta Detalle Operador",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 3,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "Iac": "7707113435486",
+      "IdPersona": "1347854",
+      "IdTransaccion": "41473",
+      "NumCelular": "3107510292",
+      "Referencia5": "Navegacion Ilimitada",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "0",
+      "Valor": "5000"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
+  },
+  {
+    "nombre": "Reval - Compra Paquete Operador",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 6,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "Iac": "7707113435486",
+      "IdPersona": "1347854",
+      "IdTransaccion": "41473",
+      "NumCelular": "3107510292",
+      "Referencia5": "Navegacion Ilimitada",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "0",
+      "Valor": "5000"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
+  },
+  {
+    "nombre": "Reval - P.O - Consulta Detalle Operador",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 3,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "Iac": "7707113435486",
+      "IdPersona": "1347854",
+      "IdTransaccion": "41473",
+      "NumCelular": "3107510292",
+      "Referencia5": "Navegacion Ilimitada",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "0",
+      "Valor": "5000"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
+  },
+  {
+    "nombre": "Reval - P.O - Compra Paquete Operador",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 6,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "Iac": "7707113435486",
+      "IdPersona": "1347854",
+      "IdTransaccion": "41473",
+      "NumCelular": "3107510292",
+      "Referencia5": "Navegacion Ilimitada",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "0",
+      "Valor": "5000"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
+  },
+  {
+    "nombre": "Reval - P.O - Consulta Contenido Digital y Operadores",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 1,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "Iac": "7707113435486",
+      "IdPersona": "1347854",
+      "IdTransaccion": "41473",
+      "NumCelular": "3107510292",
+      "Referencia5": "Navegacion Ilimitada",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "0",
+      "Valor": "5000"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
+  },
+  {
+    "nombre": "Reval - Pago Convenios",
+    "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
+    "idClienteDefault": 26,
+    "idTransaccionDefault": 15,
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "Convenio": "12167",
+      "IdPersona": "226",
+      "Referencia1": "85802044",
+      "Referencia2": "8200131855",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "3",
+      "Valor": "2000"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
+  },
+  {
+    "nombre": "Reval - Consulta Recaudo de Convenios",
     "llaveAes": "68f12b60-d1dd-4eeb-85ce-b0b95f83",
     "idClienteDefault": 26,
     "idTransaccionDefault": 14,
-    "ipClienteDefault": "172.17.0.4"
+    "ipClienteDefault": "172.17.0.4",
+    "wsseUsername": "rrtpruebas",
+    "wssePassword": "ServicioPRB01*",
+    "bodyMensajeDefault": {
+      "IdPersona": "226",
+      "Referencia1": "comcel",
+      "Referencia12": "0",
+      "Referencia13": "0",
+      "Referencia14": "0",
+      "Referencia15": "3"
+    },
+    "headerMensajeDefault": {
+      "NoIdentificacionCajero": "H3R000200014598"
+    }
   }
 ]

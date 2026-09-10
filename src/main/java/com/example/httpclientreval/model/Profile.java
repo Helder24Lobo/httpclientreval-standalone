@@ -70,4 +70,9 @@ public class Profile {
         }
         return perfiles;
     }
+
+    @Override
+    public String toString() {
+        return nombre;
+    }
 }

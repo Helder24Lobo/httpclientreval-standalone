@@ -18,6 +18,7 @@ repositories {
 
 dependencies {
     implementation 'com.google.code.gson:gson:2.11.0'
+    implementation 'com.formdev:flatlaf:3.4'
 
     testImplementation platform('org.junit:junit-bom:5.10.2')
     testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -26,12 +27,6 @@ dependencies {
 
 application {
     mainClass = 'com.example.httpclientreval.Main'
-}
-
-// El menú de Main es interactivo (Scanner sobre System.in); sin esto,
-// `./gradlew run` no conecta el teclado al proceso hijo.
-tasks.named('run') {
-    standardInput = System.in
 }
 
 test {

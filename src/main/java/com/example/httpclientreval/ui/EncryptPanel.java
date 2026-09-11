@@ -21,7 +21,6 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
-import java.awt.Insets;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -96,83 +95,56 @@ public class EncryptPanel extends JPanel {
 
     private JScrollPane crearPanelSobre(Profile perfil) {
         JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = campoGbc();
+        GridBagConstraints gbc = FormFields.gbc();
         int[] fila = {0};
-        agregarCampo(panel, gbc, fila, "IdCliente", String.valueOf(perfil.idClienteDefault));
-        agregarCampo(panel, gbc, fila, "IdTransaccion (sobre)", String.valueOf(perfil.idTransaccionDefault));
-        agregarCampo(panel, gbc, fila, "IpCliente", perfil.ipClienteDefault);
-        return envolver(panel);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "IdCliente", String.valueOf(perfil.idClienteDefault));
+        FormFields.agregarCampo(panel, gbc, fila, campos, "IdTransaccion (sobre)", String.valueOf(perfil.idTransaccionDefault));
+        FormFields.agregarCampo(panel, gbc, fila, campos, "IpCliente", perfil.ipClienteDefault);
+        return FormFields.envolver(panel);
     }
 
     private JScrollPane crearPanelMensaje(MensajeNegocio.BodyMensaje b, MensajeNegocio.HeaderMensaje h) {
         JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = campoGbc();
+        GridBagConstraints gbc = FormFields.gbc();
         int[] fila = {0};
-        agregarCampo(panel, gbc, fila, "Autorizacion", b.autorizacion);
-        agregarCampo(panel, gbc, fila, "CodBarras", b.codBarras);
-        agregarCampo(panel, gbc, fila, "Convenio", b.convenio);
-        agregarCampo(panel, gbc, fila, "FechaVencimiento", b.fechaVencimiento);
-        agregarCampo(panel, gbc, fila, "Iac", b.iac);
-        agregarCampo(panel, gbc, fila, "IdPersona", b.idPersona);
-        agregarCampo(panel, gbc, fila, "IdTransaccion (negocio)", b.idTransaccion);
-        agregarCampo(panel, gbc, fila, "NoIdentificacionUsuario", b.noIdentificacionUsuario);
-        agregarCampo(panel, gbc, fila, "NombreUsuario", b.nombreUsuario);
-        agregarCampo(panel, gbc, fila, "NumCelular", b.numCelular);
-        agregarCampo(panel, gbc, fila, "Observacion", b.observacion);
-        agregarCampo(panel, gbc, fila, "Otp", b.otp);
-        agregarCampo(panel, gbc, fila, "TipoIdentificacion", b.tipoIdentificacion);
-        agregarCampo(panel, gbc, fila, "Valor", b.valor);
-        agregarCampo(panel, gbc, fila, "NoIdentificacionCajero", h.noIdentificacionCajero);
-        return envolver(panel);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Autorizacion", b.autorizacion);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "CodBarras", b.codBarras);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Convenio", b.convenio);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "FechaVencimiento", b.fechaVencimiento);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Iac", b.iac);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "IdPersona", b.idPersona);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "IdTransaccion (negocio)", b.idTransaccion);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "NoIdentificacionUsuario", b.noIdentificacionUsuario);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "NombreUsuario", b.nombreUsuario);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "NumCelular", b.numCelular);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Observacion", b.observacion);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Otp", b.otp);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "TipoIdentificacion", b.tipoIdentificacion);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Valor", b.valor);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "NoIdentificacionCajero", h.noIdentificacionCajero);
+        return FormFields.envolver(panel);
     }
 
     private JScrollPane crearPanelReferencias(MensajeNegocio.BodyMensaje b) {
         JPanel panel = new JPanel(new GridBagLayout());
-        GridBagConstraints gbc = campoGbc();
+        GridBagConstraints gbc = FormFields.gbc();
         int[] fila = {0};
-        agregarCampo(panel, gbc, fila, "Referencia1", b.referencia1);
-        agregarCampo(panel, gbc, fila, "Referencia2", b.referencia2);
-        agregarCampo(panel, gbc, fila, "Referencia3", b.referencia3);
-        agregarCampo(panel, gbc, fila, "Referencia4", b.referencia4);
-        agregarCampo(panel, gbc, fila, "Referencia5", b.referencia5);
-        agregarCampo(panel, gbc, fila, "Referencia6", b.referencia6);
-        agregarCampo(panel, gbc, fila, "Referencia7", b.referencia7);
-        agregarCampo(panel, gbc, fila, "Referencia8", b.referencia8);
-        agregarCampo(panel, gbc, fila, "Referencia9", b.referencia9);
-        agregarCampo(panel, gbc, fila, "Referencia10", b.referencia10);
-        agregarCampo(panel, gbc, fila, "Referencia11", b.referencia11);
-        agregarCampo(panel, gbc, fila, "Referencia12", b.referencia12);
-        agregarCampo(panel, gbc, fila, "Referencia13", b.referencia13);
-        agregarCampo(panel, gbc, fila, "Referencia14", b.referencia14);
-        agregarCampo(panel, gbc, fila, "Referencia15", b.referencia15);
-        return envolver(panel);
-    }
-
-    private JScrollPane envolver(JPanel contenido) {
-        JScrollPane scroll = new JScrollPane(contenido);
-        scroll.getVerticalScrollBar().setUnitIncrement(16);
-        scroll.setBorder(null);
-        return scroll;
-    }
-
-    private static GridBagConstraints campoGbc() {
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(3, 6, 3, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        return gbc;
-    }
-
-    private void agregarCampo(JPanel panel, GridBagConstraints gbc, int[] fila, String etiqueta, String valorPorDefecto) {
-        gbc.gridx = 0;
-        gbc.gridy = fila[0]++;
-        gbc.weightx = 0;
-        panel.add(new JLabel(etiqueta + ":"), gbc);
-
-        JTextField campo = new JTextField(valorPorDefecto == null ? "" : valorPorDefecto, 22);
-        campos.put(etiqueta, campo);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        panel.add(campo, gbc);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia1", b.referencia1);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia2", b.referencia2);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia3", b.referencia3);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia4", b.referencia4);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia5", b.referencia5);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia6", b.referencia6);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia7", b.referencia7);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia8", b.referencia8);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia9", b.referencia9);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia10", b.referencia10);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia11", b.referencia11);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia12", b.referencia12);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia13", b.referencia13);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia14", b.referencia14);
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Referencia15", b.referencia15);
+        return FormFields.envolver(panel);
     }
 
     private void generar() {

@@ -28,7 +28,7 @@ public class Main {
         List<Profile> perfiles = Profile.loadAll(ARCHIVO_PERFILES);
 
         SwingUtilities.invokeLater(() -> {
-            AppWindow ventana = new AppWindow(perfiles);
+            AppWindow ventana = new AppWindow(perfiles, ARCHIVO_PERFILES);
             ventana.setVisible(true);
 
             // Fuerza la ventana al frente si el proceso se lanzó desde una

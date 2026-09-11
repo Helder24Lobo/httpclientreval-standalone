@@ -5,6 +5,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -56,5 +57,42 @@ class ProfileTest {
 
         assertNull(perfil.bodyMensajeDefault);
         assertNull(perfil.headerMensajeDefault);
+    }
+
+    @Test
+    void saveAll_yLoadAll_hacenRoundTripCompleto(@TempDir Path tempDir) throws Exception {
+        Path archivo = tempDir.resolve("profiles.json");
+
+        Profile perfil = new Profile();
+        perfil.nombre = "Nueva Transaccion";
+        perfil.llaveAes = "12345678901234567890123456789012";
+        perfil.idClienteDefault = 26;
+        perfil.idTransaccionDefault = 9;
+        perfil.ipClienteDefault = "172.17.0.4";
+        perfil.wsseUsername = "usuario";
+        perfil.wssePassword = "clave";
+
+        MensajeNegocio.BodyMensaje body = new MensajeNegocio.BodyMensaje();
+        body.idPersona = "999";
+        body.referencia1 = "prueba";
+        perfil.bodyMensajeDefault = body;
+
+        MensajeNegocio.HeaderMensaje header = new MensajeNegocio.HeaderMensaje();
+        header.noIdentificacionCajero = "CAJ001";
+        perfil.headerMensajeDefault = header;
+
+        List<Profile> perfiles = new ArrayList<>();
+        perfiles.add(perfil);
+
+        Profile.saveAll(archivo, perfiles);
+        List<Profile> releidos = Profile.loadAll(archivo);
+
+        assertEquals(1, releidos.size());
+        Profile releido = releidos.get(0);
+        assertEquals("Nueva Transaccion", releido.nombre);
+        assertEquals("999", releido.bodyMensajeDefault.idPersona);
+        assertEquals("prueba", releido.bodyMensajeDefault.referencia1);
+        assertEquals("CAJ001", releido.headerMensajeDefault.noIdentificacionCajero);
+        assertEquals("usuario", releido.wsseUsername);
     }
 }

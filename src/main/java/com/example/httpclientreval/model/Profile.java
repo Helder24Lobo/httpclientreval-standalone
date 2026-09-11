@@ -1,6 +1,7 @@
 package com.example.httpclientreval.model;
 
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
 import com.google.gson.reflect.TypeToken;
 
@@ -69,6 +70,12 @@ public class Profile {
             throw new IllegalStateException(archivo.toAbsolutePath() + " no tiene perfiles definidos.");
         }
         return perfiles;
+    }
+
+    /** Sobreescribe profiles.json con la lista completa (usado al registrar un perfil nuevo desde la UI). */
+    public static void saveAll(Path archivo, List<Profile> perfiles) throws IOException {
+        Gson gson = new GsonBuilder().setPrettyPrinting().create();
+        Files.writeString(archivo, gson.toJson(perfiles));
     }
 
     @Override

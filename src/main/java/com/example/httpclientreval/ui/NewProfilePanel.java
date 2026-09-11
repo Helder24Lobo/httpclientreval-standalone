@@ -62,10 +62,10 @@ public class NewProfilePanel extends JPanel {
         tabs.addTab("Mensaje de negocio", crearPanelMensaje(bodyDefaults, headerDefaults));
         tabs.addTab("Referencias", crearPanelReferencias(bodyDefaults));
 
-        JButton guardar = new JButton("Guardar perfil");
+        JButton guardar = new JButton("Guardar perfil", Icons.guardar());
         guardar.addActionListener(e -> guardar());
 
-        JButton limpiar = new JButton("Limpiar");
+        JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiarCampos());
 
         error.setForeground(Color.RED);

@@ -2,6 +2,8 @@ package com.example.httpclientreval;
 
 import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.ui.AppWindow;
+import com.example.httpclientreval.ui.TemaPreferencias;
+import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.FlatLightLaf;
 
 import javax.swing.SwingUtilities;
@@ -23,7 +25,11 @@ public class Main {
     private static final Path ARCHIVO_PERFILES = Paths.get("profiles.json");
 
     public static void main(String[] args) throws Exception {
-        FlatLightLaf.setup();
+        if (TemaPreferencias.CLARO.equals(TemaPreferencias.obtenerTema())) {
+            FlatLightLaf.setup();
+        } else {
+            FlatDarculaLaf.setup();
+        }
 
         List<Profile> perfiles = Profile.loadAll(ARCHIVO_PERFILES);
 

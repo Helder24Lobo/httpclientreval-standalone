@@ -37,10 +37,10 @@ public class DecryptPanel extends JPanel {
         norte.add(new JLabel("Pega el _mensaje en base64, o el sobre JSON completo:"), BorderLayout.NORTH);
         norte.add(new JScrollPane(entrada), BorderLayout.CENTER);
 
-        JButton descifrar = new JButton("Descifrar");
+        JButton descifrar = new JButton("Descifrar", Icons.descifrar());
         descifrar.addActionListener(e -> descifrar());
 
-        JButton limpiar = new JButton("Limpiar");
+        JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiar());
 
         error.setForeground(Color.RED);

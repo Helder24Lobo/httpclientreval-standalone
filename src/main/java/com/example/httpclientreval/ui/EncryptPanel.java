@@ -60,13 +60,13 @@ public class EncryptPanel extends JPanel {
         tabsEntrada.addTab("Mensaje de negocio", crearPanelMensaje(bodyDefaults, headerDefaults));
         tabsEntrada.addTab("Referencias", crearPanelReferencias(bodyDefaults));
 
-        JButton generar = new JButton("Generar");
+        JButton generar = new JButton("Generar", Icons.generar());
         generar.addActionListener(e -> generar());
 
-        JButton enviar = new JButton("Enviar al WS");
+        JButton enviar = new JButton("Enviar al WS", Icons.enviar());
         enviar.addActionListener(e -> enviarAlWs());
 
-        JButton limpiar = new JButton("Limpiar");
+        JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiar());
 
         error.setForeground(Color.RED);
@@ -231,6 +231,7 @@ public class EncryptPanel extends JPanel {
 
         error.setText("Enviando al WS...");
         salidaHttp.setTexto("");
+        salidaHttp.ocultarBadge();
         salidaResultCifrado.setTexto("");
         salidaResultPlano.setTexto("");
 
@@ -244,6 +245,8 @@ public class EncryptPanel extends JPanel {
             protected void done() {
                 try {
                     SoapHttpClient.Respuesta respuesta = get();
+                    boolean exito = respuesta.statusCode >= 200 && respuesta.statusCode < 300;
+                    salidaHttp.setBadge(respuesta.statusCode + " · " + respuesta.tiempoMs + "ms", exito);
                     salidaHttp.setTexto("HTTP " + respuesta.statusCode + "\n\n" + respuesta.cuerpo);
 
                     String resultCifrado = SoapResponseParser.extraerObjRequestResult(respuesta.cuerpo);
@@ -260,6 +263,7 @@ public class EncryptPanel extends JPanel {
                     error.setText(" ");
                 } catch (Exception ex) {
                     Throwable causa = ex.getCause() != null ? ex.getCause() : ex;
+                    salidaHttp.setBadge("Error", false);
                     error.setText("Error al enviar: " + causa.getMessage());
                 }
             }
@@ -308,6 +312,7 @@ public class EncryptPanel extends JPanel {
         salidaSobre.setTexto("");
         salidaSoap.setTexto("");
         salidaHttp.setTexto("");
+        salidaHttp.ocultarBadge();
         salidaResultCifrado.setTexto("");
         salidaResultPlano.setTexto("");
         ultimoSoapGenerado = null;

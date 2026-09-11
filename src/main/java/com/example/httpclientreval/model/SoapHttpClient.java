@@ -26,14 +26,16 @@ public class SoapHttpClient {
     public static class Respuesta {
         public final int statusCode;
         public final String cuerpo;
+        public final long tiempoMs;
 
-        public Respuesta(int statusCode, String cuerpo) {
+        public Respuesta(int statusCode, String cuerpo, long tiempoMs) {
             this.statusCode = statusCode;
             this.cuerpo = cuerpo;
+            this.tiempoMs = tiempoMs;
         }
     }
 
-    /** Envía el XML SOAP y devuelve el código HTTP junto con el body crudo de la respuesta. */
+    /** Envía el XML SOAP y devuelve el código HTTP, el body crudo y cuánto tardó la petición. */
     public static Respuesta enviar(String soapXml) throws IOException, InterruptedException {
         HttpClient client = HttpClient.newBuilder()
                 .connectTimeout(TIMEOUT)
@@ -47,8 +49,10 @@ public class SoapHttpClient {
                 .POST(HttpRequest.BodyPublishers.ofString(soapXml, StandardCharsets.UTF_8))
                 .build();
 
+        long inicio = System.currentTimeMillis();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        long tiempoMs = System.currentTimeMillis() - inicio;
 
-        return new Respuesta(response.statusCode(), response.body());
+        return new Respuesta(response.statusCode(), response.body(), tiempoMs);
     }
 }

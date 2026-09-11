@@ -19,15 +19,18 @@ import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
  * Panel de ENCRYPT: formulario en pestañas (Sobre / Mensaje de negocio /
  * Referencias) precargado con los defaults del perfil, botón Generar, y
- * salida en pestañas con botón Copiar por bloque.
+ * salida en dos filas de pestañas: una para la petición generada y otra
+ * para la respuesta del WS, cada bloque con botón Copiar.
  */
 public class EncryptPanel extends JPanel {
 
@@ -80,17 +83,33 @@ public class EncryptPanel extends JPanel {
         centro.add(tabsEntrada, BorderLayout.CENTER);
         centro.add(accion, BorderLayout.SOUTH);
 
-        JTabbedPane tabsSalida = new JTabbedPane();
-        tabsSalida.addTab("_mensaje", salidaMensaje);
-        tabsSalida.addTab("Sobre", salidaSobre);
-        tabsSalida.addTab("XML SOAP", salidaSoap);
-        tabsSalida.addTab("Respuesta HTTP", salidaHttp);
-        tabsSalida.addTab("OBJRequestResult", salidaResultCifrado);
-        tabsSalida.addTab("Respuesta en claro", salidaResultPlano);
-        tabsSalida.setPreferredSize(new Dimension(100, 240));
+        JTabbedPane tabsPeticion = new JTabbedPane();
+        tabsPeticion.addTab("_mensaje", salidaMensaje);
+        tabsPeticion.addTab("Sobre", salidaSobre);
+        tabsPeticion.addTab("XML SOAP", salidaSoap);
+
+        JTabbedPane tabsRespuesta = new JTabbedPane();
+        tabsRespuesta.addTab("Respuesta HTTP", salidaHttp);
+        tabsRespuesta.addTab("OBJRequestResult", salidaResultCifrado);
+        tabsRespuesta.addTab("Respuesta en claro", salidaResultPlano);
+
+        JPanel salidas = new JPanel(new GridLayout(2, 1, 0, 6));
+        salidas.add(conTitulo("Petición", tabsPeticion));
+        salidas.add(conTitulo("Respuesta", tabsRespuesta));
+        salidas.setPreferredSize(new Dimension(100, 440));
 
         add(centro, BorderLayout.CENTER);
-        add(tabsSalida, BorderLayout.SOUTH);
+        add(salidas, BorderLayout.SOUTH);
+    }
+
+    private static JPanel conTitulo(String titulo, JTabbedPane tabs) {
+        JLabel etiqueta = new JLabel(titulo);
+        etiqueta.setFont(etiqueta.getFont().deriveFont(Font.BOLD));
+
+        JPanel panel = new JPanel(new BorderLayout(0, 2));
+        panel.add(etiqueta, BorderLayout.NORTH);
+        panel.add(tabs, BorderLayout.CENTER);
+        return panel;
     }
 
     private JScrollPane crearPanelSobre(Profile perfil) {

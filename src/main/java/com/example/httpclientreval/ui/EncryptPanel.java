@@ -4,6 +4,7 @@ import com.example.httpclientreval.crypto.AES256CBC;
 import com.example.httpclientreval.model.Envelope;
 import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
+import com.example.httpclientreval.model.RespuestaNegocioParser;
 import com.example.httpclientreval.model.SoapHttpClient;
 import com.example.httpclientreval.model.SoapRequestBuilder;
 import com.example.httpclientreval.model.SoapResponseParser;
@@ -234,6 +235,7 @@ public class EncryptPanel extends JPanel {
         salidaHttp.ocultarBadge();
         salidaResultCifrado.setTexto("");
         salidaResultPlano.setTexto("");
+        salidaResultPlano.ocultarBadge();
 
         new SwingWorker<SoapHttpClient.Respuesta, Void>() {
             @Override
@@ -255,7 +257,13 @@ public class EncryptPanel extends JPanel {
                     } else {
                         salidaResultCifrado.setTexto(resultCifrado);
                         try {
-                            salidaResultPlano.setTexto(AES256CBC.decryptWithPrependedIV(resultCifrado, perfil.llaveAes));
+                            String plano = AES256CBC.decryptWithPrependedIV(resultCifrado, perfil.llaveAes);
+                            salidaResultPlano.setTexto(plano);
+
+                            Integer codigoNegocio = RespuestaNegocioParser.extraerCodigo(plano);
+                            if (codigoNegocio != null) {
+                                salidaResultPlano.setBadge("Código " + codigoNegocio, codigoNegocio == 0);
+                            }
                         } catch (Exception exDescifrado) {
                             salidaResultPlano.setTexto("No se pudo descifrar: " + exDescifrado.getMessage());
                         }
@@ -315,6 +323,7 @@ public class EncryptPanel extends JPanel {
         salidaHttp.ocultarBadge();
         salidaResultCifrado.setTexto("");
         salidaResultPlano.setTexto("");
+        salidaResultPlano.ocultarBadge();
         ultimoSoapGenerado = null;
         error.setText(" ");
     }

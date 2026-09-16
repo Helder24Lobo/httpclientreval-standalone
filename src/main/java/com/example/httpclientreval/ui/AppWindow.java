@@ -15,6 +15,7 @@ import javax.swing.UIManager;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -22,7 +23,8 @@ import java.util.List;
 /**
  * Ventana principal: perfil y modo (Cifrar/Descifrar) se eligen con combos;
  * el botón "Nueva transacción" abre NewProfilePanel para registrar un
- * perfil nuevo sin editar profiles.json a mano; el botón "Configuración"
+ * perfil nuevo sin editar profiles.json a mano; "Eliminar perfil" borra el
+ * seleccionado (de la lista y de profiles.json); el botón "Configuración"
  * cambia el tema (claro/oscuro) en caliente y lo recuerda para la próxima
  * vez que se abra la app.
  */
@@ -60,12 +62,16 @@ public class AppWindow extends JFrame {
             refrescar();
         });
 
+        JButton eliminarPerfil = new JButton("Eliminar perfil", Icons.limpiar());
+        eliminarPerfil.addActionListener(e -> eliminarPerfilSeleccionado());
+
         JButton configuracion = new JButton("Configuración", Icons.configuracion());
         configuracion.addActionListener(e -> abrirConfiguracion());
 
         JPanel norte = new JPanel(new FlowLayout(FlowLayout.LEFT));
         norte.add(new JLabel("Perfil:"));
         norte.add(comboPerfil);
+        norte.add(eliminarPerfil);
         norte.add(new JLabel("Modo:"));
         norte.add(comboModo);
         norte.add(nuevaTransaccion);
@@ -98,6 +104,42 @@ public class AppWindow extends JFrame {
 
         centro.revalidate();
         centro.repaint();
+    }
+
+    private void eliminarPerfilSeleccionado() {
+        Profile seleccionado = (Profile) comboPerfil.getSelectedItem();
+        if (seleccionado == null) {
+            return;
+        }
+
+        if (perfiles.size() <= 1) {
+            JOptionPane.showMessageDialog(this,
+                    "No puedes eliminar el único perfil que queda.",
+                    "No se puede eliminar", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int confirmacion = JOptionPane.showConfirmDialog(this,
+                "¿Eliminar el perfil \"" + seleccionado.nombre + "\"?\n"
+                        + "Se borra también de profiles.json. Esta acción no se puede deshacer.",
+                "Eliminar perfil", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (confirmacion != JOptionPane.YES_OPTION) {
+            return;
+        }
+
+        try {
+            perfiles.remove(seleccionado);
+            Profile.saveAll(archivoPerfiles, perfiles);
+            comboPerfil.removeItem(seleccionado);
+            mostrandoNuevaTransaccion = false;
+            refrescar();
+        } catch (IOException ex) {
+            perfiles.add(seleccionado);
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo actualizar profiles.json: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void alGuardarPerfil(Profile nuevo) {

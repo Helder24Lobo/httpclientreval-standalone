@@ -78,6 +78,23 @@ public class Profile {
         Files.writeString(archivo, gson.toJson(perfiles));
     }
 
+    public static final String GRUPO_SIN_NOMBRE = "Otros";
+    private static final String SEPARADOR_GRUPO = " - ";
+
+    /** Grupo de la transacción: lo que va antes del primer " - " del nombre (ej. "Recaudos"), o "Otros" si no hay. */
+    public String grupo() {
+        String n = nombre == null ? "" : nombre.trim();
+        int i = n.indexOf(SEPARADOR_GRUPO);
+        return i > 0 ? n.substring(0, i).trim() : GRUPO_SIN_NOMBRE;
+    }
+
+    /** Nombre de la transacción dentro de su grupo: lo que va después del primer " - ", o el nombre completo si no hay. */
+    public String detalle() {
+        String n = nombre == null ? "" : nombre.trim();
+        int i = n.indexOf(SEPARADOR_GRUPO);
+        return i > 0 ? n.substring(i + SEPARADOR_GRUPO.length()).trim() : n;
+    }
+
     @Override
     public String toString() {
         return nombre;

@@ -110,6 +110,19 @@ final class Icons {
         });
     }
 
+    static Icon editar() {
+        return icono(16, new Color(171, 71, 188), (g, s) -> {
+            Path2D lapiz = new Path2D.Double();
+            lapiz.moveTo(s * 0.1, s * 0.9);
+            lapiz.lineTo(s * 0.15, s * 0.6);
+            lapiz.lineTo(s * 0.7, s * 0.05);
+            lapiz.lineTo(s * 0.95, s * 0.3);
+            lapiz.lineTo(s * 0.4, s * 0.85);
+            lapiz.closePath();
+            g.fill(lapiz);
+        });
+    }
+
     static Icon configuracion() {
         return icono(16, new Color(158, 158, 158), (g, s) -> {
             g.setStroke(new BasicStroke(2f));

@@ -24,6 +24,7 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
+import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -44,13 +45,20 @@ public class EncryptPanel extends JPanel {
     private final OutputBlock salidaResultCifrado = new OutputBlock("OBJRequestResult (cifrado)");
     private final OutputBlock salidaResultPlano = new OutputBlock("Respuesta en claro");
     private final Profile perfil;
-    private final MensajeNegocio.BodyMensaje bodyDefaults;
-    private final MensajeNegocio.HeaderMensaje headerDefaults;
+    private final Persistidor persistidor;
+    private MensajeNegocio.BodyMensaje bodyDefaults;
+    private MensajeNegocio.HeaderMensaje headerDefaults;
     private String ultimoSoapGenerado;
 
-    public EncryptPanel(Profile perfil) {
+    /** Escribe la lista completa de perfiles en profiles.json. */
+    public interface Persistidor {
+        void guardar() throws IOException;
+    }
+
+    public EncryptPanel(Profile perfil, Persistidor persistidor) {
         super(new BorderLayout(8, 8));
         this.perfil = perfil;
+        this.persistidor = persistidor;
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         bodyDefaults = perfil.bodyMensajeDefault != null ? perfil.bodyMensajeDefault : new MensajeNegocio.BodyMensaje();
@@ -67,6 +75,10 @@ public class EncryptPanel extends JPanel {
         JButton enviar = new JButton("Enviar al WS", Icons.enviar());
         enviar.addActionListener(e -> enviarAlWs());
 
+        JButton guardar = new JButton("Guardar cambios", Icons.guardar());
+        guardar.setToolTipText("Guarda lo que hay en el formulario como valores por defecto de este perfil");
+        guardar.addActionListener(e -> guardarCambios());
+
         JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiar());
 
@@ -74,6 +86,7 @@ public class EncryptPanel extends JPanel {
         JPanel botones = new JPanel();
         botones.add(generar);
         botones.add(enviar);
+        botones.add(guardar);
         botones.add(limpiar);
 
         JPanel accion = new JPanel(new BorderLayout());
@@ -173,41 +186,7 @@ public class EncryptPanel extends JPanel {
             int idTransaccion = Integer.parseInt(campos.get("IdTransaccion (sobre)").getText().trim());
             String ipCliente = campos.get("IpCliente").getText().trim();
 
-            MensajeNegocio.BodyMensaje body = new MensajeNegocio.BodyMensaje();
-            body.autorizacion = campos.get("Autorizacion").getText();
-            body.codBarras = campos.get("CodBarras").getText();
-            body.convenio = campos.get("Convenio").getText();
-            body.fechaVencimiento = campos.get("FechaVencimiento").getText();
-            body.iac = campos.get("Iac").getText();
-            body.idPersona = campos.get("IdPersona").getText();
-            body.idTransaccion = campos.get("IdTransaccion (negocio)").getText();
-            body.noIdentificacionUsuario = campos.get("NoIdentificacionUsuario").getText();
-            body.nombreUsuario = campos.get("NombreUsuario").getText();
-            body.numCelular = campos.get("NumCelular").getText();
-            body.observacion = campos.get("Observacion").getText();
-            body.otp = campos.get("Otp").getText();
-            body.referencia1 = campos.get("Referencia1").getText();
-            body.referencia2 = campos.get("Referencia2").getText();
-            body.referencia3 = campos.get("Referencia3").getText();
-            body.referencia4 = campos.get("Referencia4").getText();
-            body.referencia5 = campos.get("Referencia5").getText();
-            body.referencia6 = campos.get("Referencia6").getText();
-            body.referencia7 = campos.get("Referencia7").getText();
-            body.referencia8 = campos.get("Referencia8").getText();
-            body.referencia9 = campos.get("Referencia9").getText();
-            body.referencia10 = campos.get("Referencia10").getText();
-            body.referencia11 = campos.get("Referencia11").getText();
-            body.referencia12 = campos.get("Referencia12").getText();
-            body.referencia13 = campos.get("Referencia13").getText();
-            body.referencia14 = campos.get("Referencia14").getText();
-            body.referencia15 = campos.get("Referencia15").getText();
-            body.tipoIdentificacion = campos.get("TipoIdentificacion").getText();
-            body.valor = campos.get("Valor").getText();
-
-            MensajeNegocio.HeaderMensaje header = new MensajeNegocio.HeaderMensaje();
-            header.noIdentificacionCajero = campos.get("NoIdentificacionCajero").getText();
-
-            String jsonNegocio = MensajeNegocio.build(body, header);
+            String jsonNegocio = MensajeNegocio.build(leerBody(), leerHeader());
             String mensajeCifrado = AES256CBC.encryptWithRandomIV(jsonNegocio, perfil.llaveAes);
             String sobreCompleto = Envelope.build(mensajeCifrado, idCliente, idTransaccion, ipCliente);
             String soapCompleto = SoapRequestBuilder.build(perfil.wsseUsername, perfil.wssePassword, sobreCompleto);
@@ -216,21 +195,109 @@ public class EncryptPanel extends JPanel {
             salidaSobre.setTexto(sobreCompleto);
             salidaSoap.setTexto(soapCompleto);
             ultimoSoapGenerado = soapCompleto;
-            error.setText(" ");
+            mostrarError(" ");
         } catch (NumberFormatException ex) {
-            error.setText("IdCliente e IdTransaccion (sobre) deben ser números enteros.");
+            mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros.");
         } catch (Exception ex) {
-            error.setText("Error: " + ex.getMessage());
+            mostrarError("Error: " + ex.getMessage());
         }
+    }
+
+    private void mostrarError(String texto) {
+        error.setForeground(Color.RED);
+        error.setText(texto);
+    }
+
+    private void mostrarExito(String texto) {
+        error.setForeground(new Color(46, 125, 50));
+        error.setText(texto);
+    }
+
+    private MensajeNegocio.BodyMensaje leerBody() {
+        MensajeNegocio.BodyMensaje body = new MensajeNegocio.BodyMensaje();
+        body.autorizacion = campos.get("Autorizacion").getText();
+        body.codBarras = campos.get("CodBarras").getText();
+        body.convenio = campos.get("Convenio").getText();
+        body.fechaVencimiento = campos.get("FechaVencimiento").getText();
+        body.iac = campos.get("Iac").getText();
+        body.idPersona = campos.get("IdPersona").getText();
+        body.idTransaccion = campos.get("IdTransaccion (negocio)").getText();
+        body.noIdentificacionUsuario = campos.get("NoIdentificacionUsuario").getText();
+        body.nombreUsuario = campos.get("NombreUsuario").getText();
+        body.numCelular = campos.get("NumCelular").getText();
+        body.observacion = campos.get("Observacion").getText();
+        body.otp = campos.get("Otp").getText();
+        body.referencia1 = campos.get("Referencia1").getText();
+        body.referencia2 = campos.get("Referencia2").getText();
+        body.referencia3 = campos.get("Referencia3").getText();
+        body.referencia4 = campos.get("Referencia4").getText();
+        body.referencia5 = campos.get("Referencia5").getText();
+        body.referencia6 = campos.get("Referencia6").getText();
+        body.referencia7 = campos.get("Referencia7").getText();
+        body.referencia8 = campos.get("Referencia8").getText();
+        body.referencia9 = campos.get("Referencia9").getText();
+        body.referencia10 = campos.get("Referencia10").getText();
+        body.referencia11 = campos.get("Referencia11").getText();
+        body.referencia12 = campos.get("Referencia12").getText();
+        body.referencia13 = campos.get("Referencia13").getText();
+        body.referencia14 = campos.get("Referencia14").getText();
+        body.referencia15 = campos.get("Referencia15").getText();
+        body.tipoIdentificacion = campos.get("TipoIdentificacion").getText();
+        body.valor = campos.get("Valor").getText();
+        return body;
+    }
+
+    private MensajeNegocio.HeaderMensaje leerHeader() {
+        MensajeNegocio.HeaderMensaje header = new MensajeNegocio.HeaderMensaje();
+        header.noIdentificacionCajero = campos.get("NoIdentificacionCajero").getText();
+        return header;
+    }
+
+    /** Guarda lo que hay en el formulario como los nuevos valores por defecto del perfil y lo persiste en profiles.json. */
+    private void guardarCambios() {
+        int idClienteAnterior = perfil.idClienteDefault;
+        int idTransaccionAnterior = perfil.idTransaccionDefault;
+        String ipAnterior = perfil.ipClienteDefault;
+        MensajeNegocio.BodyMensaje bodyAnterior = perfil.bodyMensajeDefault;
+        MensajeNegocio.HeaderMensaje headerAnterior = perfil.headerMensajeDefault;
+
+        try {
+            perfil.idClienteDefault = Integer.parseInt(campos.get("IdCliente").getText().trim());
+            perfil.idTransaccionDefault = Integer.parseInt(campos.get("IdTransaccion (sobre)").getText().trim());
+            perfil.ipClienteDefault = campos.get("IpCliente").getText().trim();
+            perfil.bodyMensajeDefault = leerBody();
+            perfil.headerMensajeDefault = leerHeader();
+
+            persistidor.guardar();
+
+            bodyDefaults = perfil.bodyMensajeDefault;
+            headerDefaults = perfil.headerMensajeDefault;
+            mostrarExito("Cambios guardados en el perfil \"" + perfil.nombre + "\".");
+        } catch (NumberFormatException ex) {
+            revertir(idClienteAnterior, idTransaccionAnterior, ipAnterior, bodyAnterior, headerAnterior);
+            mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros.");
+        } catch (IOException ex) {
+            revertir(idClienteAnterior, idTransaccionAnterior, ipAnterior, bodyAnterior, headerAnterior);
+            mostrarError("No se pudo guardar profiles.json: " + ex.getMessage());
+        }
+    }
+
+    private void revertir(int idCliente, int idTransaccion, String ip,
+                          MensajeNegocio.BodyMensaje body, MensajeNegocio.HeaderMensaje header) {
+        perfil.idClienteDefault = idCliente;
+        perfil.idTransaccionDefault = idTransaccion;
+        perfil.ipClienteDefault = ip;
+        perfil.bodyMensajeDefault = body;
+        perfil.headerMensajeDefault = header;
     }
 
     private void enviarAlWs() {
         if (ultimoSoapGenerado == null) {
-            error.setText("Primero presiona Generar.");
+            mostrarError("Primero presiona Generar.");
             return;
         }
 
-        error.setText("Enviando al WS...");
+        mostrarError("Enviando al WS...");
         salidaHttp.setTexto("");
         salidaHttp.ocultarBadge();
         salidaResultCifrado.setTexto("");
@@ -268,11 +335,11 @@ public class EncryptPanel extends JPanel {
                             salidaResultPlano.setTexto("No se pudo descifrar: " + exDescifrado.getMessage());
                         }
                     }
-                    error.setText(" ");
+                    mostrarError(" ");
                 } catch (Exception ex) {
                     Throwable causa = ex.getCause() != null ? ex.getCause() : ex;
                     salidaHttp.setBadge("Error", false);
-                    error.setText("Error al enviar: " + causa.getMessage());
+                    mostrarError("Error al enviar: " + causa.getMessage());
                 }
             }
         }.execute();
@@ -325,6 +392,6 @@ public class EncryptPanel extends JPanel {
         salidaResultPlano.setTexto("");
         salidaResultPlano.ocultarBadge();
         ultimoSoapGenerado = null;
-        error.setText(" ");
+        mostrarError(" ");
     }
 }

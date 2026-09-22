@@ -59,6 +59,36 @@ class ProfileTest {
         assertNull(perfil.headerMensajeDefault);
     }
 
+    private static Profile conNombre(String nombre) {
+        Profile p = new Profile();
+        p.nombre = nombre;
+        return p;
+    }
+
+    @Test
+    void grupoYDetalle_seSeparanPorElPrimerGuion() {
+        Profile p = conNombre("Compra pines - Consulta paquetes de contenido digital");
+
+        assertEquals("Compra pines", p.grupo());
+        assertEquals("Consulta paquetes de contenido digital", p.detalle());
+    }
+
+    @Test
+    void grupoYDetalle_conVariosGuionesSoloCortaEnElPrimero() {
+        Profile p = conNombre("Recaudos - Pago - convenio");
+
+        assertEquals("Recaudos", p.grupo());
+        assertEquals("Pago - convenio", p.detalle());
+    }
+
+    @Test
+    void grupoYDetalle_sinSeparador_vaAOtrosConElNombreCompleto() {
+        Profile p = conNombre(" Compra Paquete Operador");
+
+        assertEquals("Otros", p.grupo());
+        assertEquals("Compra Paquete Operador", p.detalle());
+    }
+
     @Test
     void saveAll_yLoadAll_hacenRoundTripCompleto(@TempDir Path tempDir) throws Exception {
         Path archivo = tempDir.resolve("profiles.json");

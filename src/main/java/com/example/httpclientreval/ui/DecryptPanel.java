@@ -42,6 +42,11 @@ public class DecryptPanel extends JPanel {
         JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiar());
 
+        descifrar.setToolTipText(Atajos.texto(Atajos.ENVIAR));
+        limpiar.setToolTipText(Atajos.texto(Atajos.LIMPIAR));
+        Atajos.registrar(this, Atajos.ENVIAR, this::descifrar);
+        Atajos.registrar(this, Atajos.LIMPIAR, this::limpiar);
+
         JPanel botones = new JPanel();
         botones.add(descifrar);
         botones.add(limpiar);

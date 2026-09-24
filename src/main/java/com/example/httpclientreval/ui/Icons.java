@@ -59,6 +59,18 @@ final class Icons {
         return icono("configuracion");
     }
 
+    static Icon buscar() {
+        return icono("buscar");
+    }
+
+    static Icon errorNegocio() {
+        return icono("error-negocio");
+    }
+
+    static Icon errorHttp() {
+        return icono("error-http");
+    }
+
     static Icon check() {
         return icono("check");
     }

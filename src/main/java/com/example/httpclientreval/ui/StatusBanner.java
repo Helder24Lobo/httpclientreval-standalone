@@ -1,6 +1,7 @@
 package com.example.httpclientreval.ui;
 
 import javax.swing.BorderFactory;
+import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.Color;
@@ -9,6 +10,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
+import java.util.function.Supplier;
 
 /**
  * Componente visual de recuadro/badge con fondo de color para notificaciones de
@@ -20,15 +22,20 @@ public class StatusBanner extends JPanel {
     private final JLabel iconoLabel = new JLabel();
     private final JLabel textoLabel = new JLabel();
 
+    /** Cada tipo tiene su color e icono, para distinguirlos de un vistazo sin leer el texto. */
     public enum Tipo {
-        EXITO(new Color(46, 125, 50)),   // Verde destacado
-        ERROR(new Color(198, 40, 40)),   // Rojo destacado
-        INFO(new Color(21, 101, 192));    // Azul destacado
+        EXITO(new Color(46, 125, 50), Icons::check),                  // Verde
+        ERROR(new Color(198, 40, 40), Icons::alerta),                 // Rojo: error genérico
+        ERROR_NEGOCIO(new Color(183, 80, 0), Icons::errorNegocio),    // Naranja: el servicio rechazó la operación
+        ERROR_HTTP(new Color(136, 14, 79), Icons::errorHttp),         // Granate: falla a nivel de HTTP
+        INFO(new Color(21, 101, 192), Icons::info);                   // Azul
 
         final Color colorFondo;
+        final Supplier<Icon> icono;
 
-        Tipo(Color colorFondo) {
+        Tipo(Color colorFondo, Supplier<Icon> icono) {
             this.colorFondo = colorFondo;
+            this.icono = icono;
         }
     }
 
@@ -61,36 +68,35 @@ public class StatusBanner extends JPanel {
     }
 
     public void mostrarExito(String mensaje) {
-        if (mensaje == null || mensaje.isBlank()) {
-            ocultar();
-            return;
-        }
-        this.tipoActual = Tipo.EXITO;
-        iconoLabel.setIcon(Icons.check());
-        textoLabel.setText(mensaje);
-        setVisible(true);
-        notificarCambio();
+        mostrar(Tipo.EXITO, mensaje);
     }
 
+    /** Error genérico: validaciones, fallas de conexión o respuestas que no se pudieron interpretar. */
     public void mostrarError(String mensaje) {
-        if (mensaje == null || mensaje.isBlank()) {
-            ocultar();
-            return;
-        }
-        this.tipoActual = Tipo.ERROR;
-        iconoLabel.setIcon(Icons.alerta());
-        textoLabel.setText(mensaje);
-        setVisible(true);
-        notificarCambio();
+        mostrar(Tipo.ERROR, mensaje);
+    }
+
+    /** La llamada llegó bien (HTTP 2xx) pero el servicio respondió con un código de negocio distinto de éxito. */
+    public void mostrarErrorNegocio(String mensaje) {
+        mostrar(Tipo.ERROR_NEGOCIO, mensaje);
+    }
+
+    /** El servidor respondió con un código HTTP fuera de 2xx. */
+    public void mostrarErrorHttp(String mensaje) {
+        mostrar(Tipo.ERROR_HTTP, mensaje);
     }
 
     public void mostrarInfo(String mensaje) {
+        mostrar(Tipo.INFO, mensaje);
+    }
+
+    private void mostrar(Tipo tipo, String mensaje) {
         if (mensaje == null || mensaje.isBlank()) {
             ocultar();
             return;
         }
-        this.tipoActual = Tipo.INFO;
-        iconoLabel.setIcon(Icons.info());
+        this.tipoActual = tipo;
+        iconoLabel.setIcon(tipo.icono.get());
         textoLabel.setText(mensaje);
         setVisible(true);
         notificarCambio();

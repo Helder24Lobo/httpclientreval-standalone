@@ -84,6 +84,18 @@ public class EncryptPanel extends JPanel {
         JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiar());
 
+        generar.setToolTipText(Atajos.texto(Atajos.GENERAR));
+        Atajos.registrar(this, Atajos.GENERAR, this::generar);
+        botonEnviar.setToolTipText(Atajos.texto(Atajos.ENVIAR));
+        limpiar.setToolTipText(Atajos.texto(Atajos.LIMPIAR));
+        // Mientras hay un envío en curso el botón está deshabilitado y el atajo no debe lanzar otro.
+        Atajos.registrar(this, Atajos.ENVIAR, () -> {
+            if (botonEnviar.isEnabled()) {
+                enviarAlWs();
+            }
+        });
+        Atajos.registrar(this, Atajos.LIMPIAR, this::limpiar);
+
         JPanel botones = new JPanel();
         botones.add(generar);
         botones.add(botonEnviar);
@@ -362,7 +374,7 @@ public class EncryptPanel extends JPanel {
                     }
 
                     if (!exitoHttp) {
-                        statusBanner.mostrarError("Respuesta del WS con error HTTP " + respuesta.statusCode);
+                        statusBanner.mostrarErrorHttp("Respuesta del WS con error HTTP " + respuesta.statusCode);
                     } else if (resultadoNegocio != null && resultadoNegocio.codigo != null) {
                         if (resultadoNegocio.esExitoso()) {
                             String msg = "Proceso exitoso (Código 0 · HTTP " + respuesta.statusCode + " · " + respuesta.tiempoMs + "ms)";
@@ -375,7 +387,7 @@ public class EncryptPanel extends JPanel {
                             if (resultadoNegocio.mensaje != null && !resultadoNegocio.mensaje.isBlank()) {
                                 msg += ": " + resultadoNegocio.mensaje;
                             }
-                            statusBanner.mostrarError(msg);
+                            statusBanner.mostrarErrorNegocio(msg);
                         }
                     } else if (resultCifrado == null) {
                         statusBanner.mostrarError("Respuesta HTTP " + respuesta.statusCode + " recibida pero sin OBJRequestResult.");

@@ -68,6 +68,11 @@ public class NewProfilePanel extends JPanel {
         JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiarCampos());
 
+        guardar.setToolTipText(Atajos.texto(Atajos.ENVIAR));
+        limpiar.setToolTipText(Atajos.texto(Atajos.LIMPIAR));
+        Atajos.registrar(this, Atajos.ENVIAR, this::guardar);
+        Atajos.registrar(this, Atajos.LIMPIAR, this::limpiarCampos);
+
         JPanel botones = new JPanel();
         botones.add(guardar);
         botones.add(limpiar);

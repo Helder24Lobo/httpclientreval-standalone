@@ -99,6 +99,11 @@ public class AppWindow extends JFrame {
         JButton eliminarPerfil = new JButton("Eliminar perfil", Icons.limpiar());
         eliminarPerfil.addActionListener(e -> eliminarPerfilSeleccionado());
 
+        JButton buscarPerfil = new JButton("Buscar", Icons.buscar());
+        buscarPerfil.setToolTipText("Buscar perfil (" + Atajos.texto(Atajos.BUSCAR) + ")");
+        buscarPerfil.addActionListener(e -> buscarPerfil());
+        Atajos.registrar(getRootPane(), Atajos.BUSCAR, this::buscarPerfil);
+
         JButton configuracion = new JButton("Configuración", Icons.configuracion());
         configuracion.addActionListener(e -> abrirConfiguracion());
 
@@ -114,6 +119,7 @@ public class AppWindow extends JFrame {
         filaAcciones.add(new JLabel("Modo:"));
         filaAcciones.add(comboModo);
         filaAcciones.add(nuevaTransaccion);
+        filaAcciones.add(buscarPerfil);
         filaAcciones.add(configuracion);
 
         JPanel norte = new JPanel();
@@ -202,6 +208,15 @@ public class AppWindow extends JFrame {
 
         centro.revalidate();
         centro.repaint();
+    }
+
+    /** Abre el buscador rápido y salta al perfil elegido, manteniendo el modo (Cifrar/Descifrar) actual. */
+    private void buscarPerfil() {
+        new BuscadorPerfiles(this, perfiles, elegido -> {
+            mostrandoNuevaTransaccion = false;
+            cargarGrupos(elegido.grupo(), elegido);
+            refrescar();
+        }).setVisible(true);
     }
 
     private void renombrarPerfilSeleccionado() {

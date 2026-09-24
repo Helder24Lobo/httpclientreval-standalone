@@ -16,6 +16,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -49,6 +50,7 @@ public class EncryptPanel extends JPanel {
     private MensajeNegocio.BodyMensaje bodyDefaults;
     private MensajeNegocio.HeaderMensaje headerDefaults;
     private String ultimoSoapGenerado;
+    private JButton botonEnviar;
 
     /** Escribe la lista completa de perfiles en profiles.json. */
     public interface Persistidor {
@@ -72,8 +74,8 @@ public class EncryptPanel extends JPanel {
         JButton generar = new JButton("Generar", Icons.generar());
         generar.addActionListener(e -> generar());
 
-        JButton enviar = new JButton("Enviar al WS", Icons.enviar());
-        enviar.addActionListener(e -> enviarAlWs());
+        botonEnviar = new JButton("Enviar al WS", Icons.enviar());
+        botonEnviar.addActionListener(e -> enviarAlWs());
 
         JButton guardar = new JButton("Guardar cambios", Icons.guardar());
         guardar.setToolTipText("Guarda lo que hay en el formulario como valores por defecto de este perfil");
@@ -85,7 +87,7 @@ public class EncryptPanel extends JPanel {
         error.setForeground(Color.RED);
         JPanel botones = new JPanel();
         botones.add(generar);
-        botones.add(enviar);
+        botones.add(botonEnviar);
         botones.add(guardar);
         botones.add(limpiar);
 
@@ -297,14 +299,18 @@ public class EncryptPanel extends JPanel {
             return;
         }
 
-        mostrarError("Enviando al WS...");
+        mostrarError(" ");
+        botonEnviar.setEnabled(false);
         salidaHttp.setTexto("");
         salidaHttp.ocultarBadge();
         salidaResultCifrado.setTexto("");
         salidaResultPlano.setTexto("");
         salidaResultPlano.ocultarBadge();
 
-        new SwingWorker<SoapHttpClient.Respuesta, Void>() {
+        EnviandoDialog dialogo = new EnviandoDialog(SwingUtilities.getWindowAncestor(this),
+                "Enviando la petición al webservice...");
+
+        SwingWorker<SoapHttpClient.Respuesta, Void> worker = new SwingWorker<>() {
             @Override
             protected SoapHttpClient.Respuesta doInBackground() throws Exception {
                 return SoapHttpClient.enviar(ultimoSoapGenerado);
@@ -312,6 +318,8 @@ public class EncryptPanel extends JPanel {
 
             @Override
             protected void done() {
+                dialogo.dispose();
+                botonEnviar.setEnabled(true);
                 try {
                     SoapHttpClient.Respuesta respuesta = get();
                     boolean exito = respuesta.statusCode >= 200 && respuesta.statusCode < 300;
@@ -342,7 +350,9 @@ public class EncryptPanel extends JPanel {
                     mostrarError("Error al enviar: " + causa.getMessage());
                 }
             }
-        }.execute();
+        };
+        worker.execute();
+        dialogo.setVisible(true); // bloquea aquí (modal) hasta que done() llame dialogo.dispose()
     }
 
     /** Vuelve todos los campos a los defaults del perfil y borra las salidas, para armar la siguiente transacción. */

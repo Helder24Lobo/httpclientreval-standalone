@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 public class NewProfilePanel extends JPanel {
 
     private final Map<String, JTextField> campos = new LinkedHashMap<>();
-    private final JLabel error = new JLabel(" ");
+    private final StatusBanner statusBanner = new StatusBanner();
     private final Path archivoPerfiles;
     private final List<Profile> perfiles;
     private final Consumer<Profile> alGuardar;
@@ -68,13 +68,12 @@ public class NewProfilePanel extends JPanel {
         JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiarCampos());
 
-        error.setForeground(Color.RED);
         JPanel botones = new JPanel();
         botones.add(guardar);
         botones.add(limpiar);
 
-        JPanel accion = new JPanel(new BorderLayout());
-        accion.add(error, BorderLayout.CENTER);
+        JPanel accion = new JPanel(new BorderLayout(8, 0));
+        accion.add(statusBanner, BorderLayout.CENTER);
         accion.add(botones, BorderLayout.EAST);
 
         add(tabs, BorderLayout.CENTER);
@@ -208,8 +207,7 @@ public class NewProfilePanel extends JPanel {
             perfiles.add(perfil);
             Profile.saveAll(archivoPerfiles, perfiles);
 
-            error.setForeground(new Color(0, 128, 0));
-            error.setText("Perfil \"" + nombre + "\" guardado en " + archivoPerfiles.toAbsolutePath());
+            mostrarExito("Perfil \"" + nombre + "\" guardado correctamente.");
             alGuardar.accept(perfil);
         } catch (NumberFormatException ex) {
             mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros.");
@@ -221,8 +219,11 @@ public class NewProfilePanel extends JPanel {
     }
 
     private void mostrarError(String mensaje) {
-        error.setForeground(Color.RED);
-        error.setText(mensaje);
+        statusBanner.mostrarError(mensaje);
+    }
+
+    private void mostrarExito(String mensaje) {
+        statusBanner.mostrarExito(mensaje);
     }
 
     private void limpiarCampos() {
@@ -233,7 +234,6 @@ public class NewProfilePanel extends JPanel {
         campos.get("WsseUsername").setText(wsseUsernameDefault);
         campos.get("WssePassword").setText(wssePasswordDefault);
         campos.get("IpCliente").setText("172.17.0.4");
-        error.setForeground(Color.RED);
-        error.setText(" ");
+        statusBanner.ocultar();
     }
 }

@@ -132,4 +132,31 @@ final class Icons {
             g.fillOval((int) (s * 0.3), (int) (s * 0.62), (int) (s * 0.16), (int) (s * 0.16));
         });
     }
+
+    static Icon check() {
+        return icono(16, Color.WHITE, (g, s) -> {
+            g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            Path2D p = new Path2D.Double();
+            p.moveTo(s * 0.18, s * 0.52);
+            p.lineTo(s * 0.42, s * 0.76);
+            p.lineTo(s * 0.82, s * 0.24);
+            g.draw(p);
+        });
+    }
+
+    static Icon alerta() {
+        return icono(16, Color.WHITE, (g, s) -> {
+            g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.drawLine((int) (s * 0.5), (int) (s * 0.15), (int) (s * 0.5), (int) (s * 0.6));
+            g.fillOval((int) (s * 0.42), (int) (s * 0.72), (int) (s * 0.16), (int) (s * 0.16));
+        });
+    }
+
+    static Icon info() {
+        return icono(16, Color.WHITE, (g, s) -> {
+            g.setStroke(new BasicStroke(2.2f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+            g.fillOval((int) (s * 0.42), (int) (s * 0.15), (int) (s * 0.16), (int) (s * 0.16));
+            g.drawLine((int) (s * 0.5), (int) (s * 0.4), (int) (s * 0.5), (int) (s * 0.85));
+        });
+    }
 }

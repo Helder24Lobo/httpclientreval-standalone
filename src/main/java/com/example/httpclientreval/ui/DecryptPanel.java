@@ -11,7 +11,6 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Dimension;
 
 /**
@@ -22,7 +21,7 @@ public class DecryptPanel extends JPanel {
 
     private final Profile perfil;
     private final JTextArea entrada = new JTextArea(6, 40);
-    private final JLabel error = new JLabel(" ");
+    private final StatusBanner statusBanner = new StatusBanner();
     private final OutputBlock salida = new OutputBlock("JSON de negocio en claro");
 
     public DecryptPanel(Profile perfil) {
@@ -43,13 +42,12 @@ public class DecryptPanel extends JPanel {
         JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiar());
 
-        error.setForeground(Color.RED);
         JPanel botones = new JPanel();
         botones.add(descifrar);
         botones.add(limpiar);
 
-        JPanel accion = new JPanel(new BorderLayout());
-        accion.add(error, BorderLayout.CENTER);
+        JPanel accion = new JPanel(new BorderLayout(8, 0));
+        accion.add(statusBanner, BorderLayout.CENTER);
         accion.add(botones, BorderLayout.EAST);
 
         JPanel centro = new JPanel(new BorderLayout(4, 4));
@@ -65,18 +63,22 @@ public class DecryptPanel extends JPanel {
     private void descifrar() {
         try {
             String texto = entrada.getText().trim();
+            if (texto.isEmpty()) {
+                statusBanner.mostrarError("Ingresa o pega un mensaje cifrado o sobre JSON.");
+                return;
+            }
             String base64Mensaje = texto.startsWith("{") ? Envelope.extraerMensaje(texto) : texto;
             String jsonPlano = AES256CBC.decryptWithPrependedIV(base64Mensaje, perfil.llaveAes);
             salida.setTexto(jsonPlano);
-            error.setText(" ");
+            statusBanner.mostrarExito("Mensaje descifrado correctamente.");
         } catch (Exception ex) {
-            error.setText("Error: " + ex.getMessage());
+            statusBanner.mostrarError("Error al descifrar: " + ex.getMessage());
         }
     }
 
     private void limpiar() {
         entrada.setText("");
         salida.setTexto("");
-        error.setText(" ");
+        statusBanner.ocultar();
     }
 }

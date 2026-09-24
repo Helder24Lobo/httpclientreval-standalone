@@ -38,7 +38,7 @@ import java.util.Map;
 public class EncryptPanel extends JPanel {
 
     private final Map<String, JTextField> campos = new LinkedHashMap<>();
-    private final JLabel error = new JLabel(" ");
+    private final StatusBanner statusBanner = new StatusBanner();
     private final OutputBlock salidaMensaje = new OutputBlock("_mensaje (Base64)");
     private final OutputBlock salidaSobre = new OutputBlock("Sobre JSON");
     private final OutputBlock salidaSoap = new OutputBlock("XML SOAP (Postman)");
@@ -84,15 +84,14 @@ public class EncryptPanel extends JPanel {
         JButton limpiar = new JButton("Limpiar", Icons.limpiar());
         limpiar.addActionListener(e -> limpiar());
 
-        error.setForeground(Color.RED);
         JPanel botones = new JPanel();
         botones.add(generar);
         botones.add(botonEnviar);
         botones.add(guardar);
         botones.add(limpiar);
 
-        JPanel accion = new JPanel(new BorderLayout());
-        accion.add(error, BorderLayout.CENTER);
+        JPanel accion = new JPanel(new BorderLayout(8, 0));
+        accion.add(statusBanner, BorderLayout.CENTER);
         accion.add(botones, BorderLayout.EAST);
 
         JPanel centro = new JPanel(new BorderLayout(4, 4));
@@ -197,7 +196,7 @@ public class EncryptPanel extends JPanel {
             salidaSobre.setTexto(sobreCompleto);
             salidaSoap.setTexto(soapCompleto);
             ultimoSoapGenerado = soapCompleto;
-            mostrarError(" ");
+            statusBanner.mostrarExito("Petición SOAP generada correctamente.");
         } catch (NumberFormatException ex) {
             mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros.");
         } catch (Exception ex) {
@@ -206,13 +205,11 @@ public class EncryptPanel extends JPanel {
     }
 
     private void mostrarError(String texto) {
-        error.setForeground(Color.RED);
-        error.setText(texto);
+        statusBanner.mostrarError(texto);
     }
 
     private void mostrarExito(String texto) {
-        error.setForeground(new Color(46, 125, 50));
-        error.setText(texto);
+        statusBanner.mostrarExito(texto);
     }
 
     private MensajeNegocio.BodyMensaje leerBody() {
@@ -299,7 +296,7 @@ public class EncryptPanel extends JPanel {
             return;
         }
 
-        mostrarError(" ");
+        statusBanner.ocultar();
         botonEnviar.setEnabled(false);
         salidaHttp.setTexto("");
         salidaHttp.ocultarBadge();
@@ -322,11 +319,13 @@ public class EncryptPanel extends JPanel {
                 botonEnviar.setEnabled(true);
                 try {
                     SoapHttpClient.Respuesta respuesta = get();
-                    boolean exito = respuesta.statusCode >= 200 && respuesta.statusCode < 300;
-                    salidaHttp.setBadge(respuesta.statusCode + " · " + respuesta.tiempoMs + "ms", exito);
+                    boolean exitoHttp = respuesta.statusCode >= 200 && respuesta.statusCode < 300;
+                    salidaHttp.setBadge(respuesta.statusCode + " · " + respuesta.tiempoMs + "ms", exitoHttp);
                     salidaHttp.setTexto("HTTP " + respuesta.statusCode + "\n\n" + respuesta.cuerpo);
 
                     String resultCifrado = SoapResponseParser.extraerObjRequestResult(respuesta.cuerpo);
+                    RespuestaNegocioParser.Resultado resultadoNegocio = null;
+
                     if (resultCifrado == null) {
                         salidaResultCifrado.setTexto("(No se encontró OBJRequestResult en la respuesta)");
                     } else {
@@ -335,15 +334,36 @@ public class EncryptPanel extends JPanel {
                             String plano = AES256CBC.decryptWithPrependedIV(resultCifrado, perfil.llaveAes);
                             salidaResultPlano.setTexto(plano);
 
-                            Integer codigoNegocio = RespuestaNegocioParser.extraerCodigo(plano);
-                            if (codigoNegocio != null) {
-                                salidaResultPlano.setBadge("Código " + codigoNegocio, codigoNegocio == 0);
+                            resultadoNegocio = RespuestaNegocioParser.parsear(plano);
+                            if (resultadoNegocio.codigo != null) {
+                                salidaResultPlano.setBadge("Código " + resultadoNegocio.codigo, resultadoNegocio.esExitoso());
                             }
                         } catch (Exception exDescifrado) {
                             salidaResultPlano.setTexto("No se pudo descifrar: " + exDescifrado.getMessage());
                         }
                     }
-                    mostrarError(" ");
+
+                    if (!exitoHttp) {
+                        statusBanner.mostrarError("Respuesta del WS con error HTTP " + respuesta.statusCode);
+                    } else if (resultadoNegocio != null && resultadoNegocio.codigo != null) {
+                        if (resultadoNegocio.esExitoso()) {
+                            String msg = "Proceso exitoso (Código 0 · HTTP " + respuesta.statusCode + " · " + respuesta.tiempoMs + "ms)";
+                            if (resultadoNegocio.mensaje != null && !resultadoNegocio.mensaje.isBlank()) {
+                                msg += ": " + resultadoNegocio.mensaje;
+                            }
+                            statusBanner.mostrarExito(msg);
+                        } else {
+                            String msg = "Error de negocio (Código " + resultadoNegocio.codigo + ")";
+                            if (resultadoNegocio.mensaje != null && !resultadoNegocio.mensaje.isBlank()) {
+                                msg += ": " + resultadoNegocio.mensaje;
+                            }
+                            statusBanner.mostrarError(msg);
+                        }
+                    } else if (resultCifrado == null) {
+                        statusBanner.mostrarError("Respuesta HTTP " + respuesta.statusCode + " recibida pero sin OBJRequestResult.");
+                    } else {
+                        statusBanner.mostrarError("Respuesta HTTP " + respuesta.statusCode + " recibida pero no se pudo determinar el código de negocio.");
+                    }
                 } catch (Exception ex) {
                     Throwable causa = ex.getCause() != null ? ex.getCause() : ex;
                     salidaHttp.setBadge("Error", false);
@@ -402,6 +422,6 @@ public class EncryptPanel extends JPanel {
         salidaResultPlano.setTexto("");
         salidaResultPlano.ocultarBadge();
         ultimoSoapGenerado = null;
-        mostrarError(" ");
+        statusBanner.ocultar();
     }
 }

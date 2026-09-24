@@ -338,7 +338,8 @@ public class EncryptPanel extends JPanel {
                     SoapHttpClient.Respuesta respuesta = get();
                     boolean exitoHttp = respuesta.statusCode >= 200 && respuesta.statusCode < 300;
                     salidaHttp.setBadge(respuesta.statusCode + " · " + respuesta.tiempoMs + "ms", exitoHttp);
-                    salidaHttp.setTexto("HTTP " + respuesta.statusCode + "\n\n" + respuesta.cuerpo);
+                    // El código HTTP ya va en el badge; así el cuerpo queda como XML/JSON puro y se puede formatear.
+                    salidaHttp.setTexto(respuesta.cuerpo);
 
                     String resultCifrado = SoapResponseParser.extraerObjRequestResult(respuesta.cuerpo);
                     RespuestaNegocioParser.Resultado resultadoNegocio = null;

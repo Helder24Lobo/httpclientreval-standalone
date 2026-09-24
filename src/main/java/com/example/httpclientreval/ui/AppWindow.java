@@ -1,8 +1,7 @@
 package com.example.httpclientreval.ui;
 
 import com.example.httpclientreval.model.Profile;
-import com.formdev.flatlaf.FlatDarculaLaf;
-import com.formdev.flatlaf.FlatLightLaf;
+import com.formdev.flatlaf.FlatLaf;
 
 import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
@@ -14,12 +13,13 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.SwingUtilities;
-import javax.swing.UIManager;
+import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -33,7 +33,8 @@ import java.util.Set;
  * luego la transacción de ese grupo. El modo (Cifrar/Descifrar) es otro combo;
  * "Nueva transacción" registra un perfil sin editar profiles.json a mano,
  * "Renombrar" y "Eliminar perfil" lo modifican o borran (también en
- * profiles.json), y "Configuración" cambia el tema claro/oscuro en caliente.
+ * profiles.json), y "Configuración" cambia el tema (claro, oscuro o el del sistema) en
+ * caliente. El tamaño y la posición de la ventana se recuerdan entre corridas.
  */
 public class AppWindow extends JFrame {
 
@@ -132,7 +133,18 @@ public class AppWindow extends JFrame {
         // en vez de forzar un tamaño total que los solape con las pestañas.
         centro.setPreferredSize(new Dimension(900, 650));
         pack();
-        setLocationRelativeTo(null);
+        if (!VentanaPreferencias.restaurarYRecordar(this)) {
+            setLocationRelativeTo(null);
+        }
+
+        // Con "Seguir el sistema", el tema del SO puede cambiar con la app
+        // abierta; se vuelve a consultar cada vez que la ventana recupera el foco.
+        addWindowFocusListener(new WindowAdapter() {
+            @Override
+            public void windowGainedFocus(WindowEvent e) {
+                sincronizarConSistema();
+            }
+        });
     }
 
     /** Rellena el combo de grupos (en orden de aparición) y deja seleccionado el indicado. */
@@ -283,7 +295,8 @@ public class AppWindow extends JFrame {
     }
 
     private void abrirConfiguracion() {
-        JComboBox<String> comboTema = new JComboBox<>(new String[]{TemaPreferencias.OSCURO, TemaPreferencias.CLARO});
+        JComboBox<String> comboTema = new JComboBox<>(new String[]{
+                TemaPreferencias.SISTEMA, TemaPreferencias.OSCURO, TemaPreferencias.CLARO});
         comboTema.setSelectedItem(TemaPreferencias.obtenerTema());
 
         JPanel panel = new JPanel(new BorderLayout(8, 8));
@@ -299,15 +312,42 @@ public class AppWindow extends JFrame {
 
         String nuevoTema = (String) comboTema.getSelectedItem();
         TemaPreferencias.guardarTema(nuevoTema);
+        aplicarTema(TemaPreferencias.esOscuro(nuevoTema));
+    }
 
-        try {
-            if (TemaPreferencias.CLARO.equals(nuevoTema)) {
-                UIManager.setLookAndFeel(new FlatLightLaf());
-            } else {
-                UIManager.setLookAndFeel(new FlatDarculaLaf());
+    /** Si el tema es "Seguir el sistema", consulta el SO (fuera del EDT) y cambia el tema si no coincide. */
+    private void sincronizarConSistema() {
+        if (!TemaPreferencias.SISTEMA.equals(TemaPreferencias.obtenerTema())) {
+            return;
+        }
+        new SwingWorker<Boolean, Void>() {
+            @Override
+            protected Boolean doInBackground() {
+                return TemaPreferencias.sistemaEnOscuro();
             }
-            SwingUtilities.updateComponentTreeUI(this);
-            pack();
+
+            @Override
+            protected void done() {
+                try {
+                    // Se revalida: el usuario pudo cambiar el tema mientras se consultaba el SO.
+                    if (TemaPreferencias.SISTEMA.equals(TemaPreferencias.obtenerTema())) {
+                        aplicarTema(get());
+                    }
+                } catch (Exception ignorada) {
+                    // Si no se pudo consultar el SO se deja el tema actual.
+                }
+            }
+        }.execute();
+    }
+
+    private void aplicarTema(boolean oscuro) {
+        if (oscuro == FlatLaf.isLafDark()) {
+            return;
+        }
+        try {
+            TemaPreferencias.instalar(oscuro);
+            // Refresca todas las ventanas abiertas sin pack(), para respetar el tamaño elegido por el usuario.
+            FlatLaf.updateUI();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "No se pudo aplicar el tema: " + ex.getMessage());
         }

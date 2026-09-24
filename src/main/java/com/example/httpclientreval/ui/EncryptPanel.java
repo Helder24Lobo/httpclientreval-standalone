@@ -134,6 +134,9 @@ public class EncryptPanel extends JPanel {
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdCliente", String.valueOf(perfil.idClienteDefault));
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdTransaccion (sobre)", String.valueOf(perfil.idTransaccionDefault));
         FormFields.agregarCampo(panel, gbc, fila, campos, "IpCliente", perfil.ipClienteDefault);
+
+        FormFields.aplicarValidacionNumerica(campos.get("IdCliente"));
+        FormFields.aplicarValidacionNumerica(campos.get("IdTransaccion (sobre)"));
         return FormFields.envolver(panel);
     }
 
@@ -182,6 +185,13 @@ public class EncryptPanel extends JPanel {
     }
 
     private void generar() {
+        boolean clienteOk = FormFields.esEnteroValido(campos.get("IdCliente"));
+        boolean transaccionOk = FormFields.esEnteroValido(campos.get("IdTransaccion (sobre)"));
+        if (!clienteOk || !transaccionOk) {
+            mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros válidos.");
+            return;
+        }
+
         try {
             int idCliente = Integer.parseInt(campos.get("IdCliente").getText().trim());
             int idTransaccion = Integer.parseInt(campos.get("IdTransaccion (sobre)").getText().trim());
@@ -198,7 +208,7 @@ public class EncryptPanel extends JPanel {
             ultimoSoapGenerado = soapCompleto;
             statusBanner.mostrarExito("Petición SOAP generada correctamente.");
         } catch (NumberFormatException ex) {
-            mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros.");
+            mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros válidos.");
         } catch (Exception ex) {
             mostrarError("Error: " + ex.getMessage());
         }
@@ -254,6 +264,13 @@ public class EncryptPanel extends JPanel {
 
     /** Guarda lo que hay en el formulario como los nuevos valores por defecto del perfil y lo persiste en profiles.json. */
     private void guardarCambios() {
+        boolean clienteOk = FormFields.esEnteroValido(campos.get("IdCliente"));
+        boolean transaccionOk = FormFields.esEnteroValido(campos.get("IdTransaccion (sobre)"));
+        if (!clienteOk || !transaccionOk) {
+            mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros válidos.");
+            return;
+        }
+
         int idClienteAnterior = perfil.idClienteDefault;
         int idTransaccionAnterior = perfil.idTransaccionDefault;
         String ipAnterior = perfil.ipClienteDefault;
@@ -274,7 +291,7 @@ public class EncryptPanel extends JPanel {
             mostrarExito("Cambios guardados en el perfil \"" + perfil.nombre + "\".");
         } catch (NumberFormatException ex) {
             revertir(idClienteAnterior, idTransaccionAnterior, ipAnterior, bodyAnterior, headerAnterior);
-            mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros.");
+            mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros válidos.");
         } catch (IOException ex) {
             revertir(idClienteAnterior, idTransaccionAnterior, ipAnterior, bodyAnterior, headerAnterior);
             mostrarError("No se pudo guardar profiles.json: " + ex.getMessage());

@@ -92,6 +92,9 @@ public class NewProfilePanel extends JPanel {
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdCliente", "");
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdTransaccion (sobre)", "");
         FormFields.agregarCampo(panel, gbc, fila, campos, "IpCliente", "172.17.0.4");
+
+        FormFields.aplicarValidacionNumerica(campos.get("IdCliente"));
+        FormFields.aplicarValidacionNumerica(campos.get("IdTransaccion (sobre)"));
         return FormFields.envolver(panel);
     }
 
@@ -155,6 +158,13 @@ public class NewProfilePanel extends JPanel {
                 }
             }
             AES256CBC.validarLlave(llaveAes);
+
+            boolean clienteOk = FormFields.esEnteroValido(campos.get("IdCliente"));
+            boolean transaccionOk = FormFields.esEnteroValido(campos.get("IdTransaccion (sobre)"));
+            if (!clienteOk || !transaccionOk) {
+                mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros válidos.");
+                return;
+            }
 
             int idCliente = Integer.parseInt(campos.get("IdCliente").getText().trim());
             int idTransaccionSobre = Integer.parseInt(campos.get("IdTransaccion (sobre)").getText().trim());

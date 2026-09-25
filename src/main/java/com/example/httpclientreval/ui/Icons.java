@@ -63,6 +63,14 @@ final class Icons {
         return icono("buscar");
     }
 
+    static Icon favorito() {
+        return icono("favorito");
+    }
+
+    static Icon favoritoVacio() {
+        return icono("favorito-vacio");
+    }
+
     static Icon errorNegocio() {
         return icono("error-negocio");
     }

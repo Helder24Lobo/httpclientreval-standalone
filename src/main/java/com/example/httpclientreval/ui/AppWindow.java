@@ -38,6 +38,12 @@ import java.util.Set;
  */
 public class AppWindow extends JFrame {
 
+    /** Grupos virtuales al inicio del combo de grupos; solo aparecen si tienen al menos un perfil. */
+    private static final String GRUPO_FAVORITOS = "★ Favoritos";
+    private static final String GRUPO_RECIENTES = "◷ Recientes";
+
+    private final PerfilesPreferencias preferencias = PerfilesPreferencias.instancia();
+    private final JButton botonFavorito = new JButton();
     private final List<Profile> perfiles;
     private final Path archivoPerfiles;
     private final JComboBox<String> comboGrupo = new JComboBox<>();
@@ -58,11 +64,16 @@ public class AppWindow extends JFrame {
         comboModo = new JComboBox<>(new String[]{"Cifrar (ENCRYPT)", "Descifrar (DECRYPT)"});
 
         // En el combo de transacciones solo se muestra el detalle; el grupo ya está en el otro combo.
+        // En Favoritos/Recientes se mezclan grupos, así que ahí se muestra el nombre completo.
         comboPerfil.setRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index,
                                                           boolean isSelected, boolean cellHasFocus) {
-                Object texto = value instanceof Profile ? ((Profile) value).detalle() : value;
+                Object texto = value;
+                if (value instanceof Profile) {
+                    Profile p = (Profile) value;
+                    texto = esGrupoVirtual(comboGrupo.getSelectedItem()) ? p.nombre : p.detalle();
+                }
                 return super.getListCellRendererComponent(list, texto, index, isSelected, cellHasFocus);
             }
         });
@@ -74,6 +85,7 @@ public class AppWindow extends JFrame {
             cargarPerfilesDelGrupo((String) comboGrupo.getSelectedItem(), null);
             mostrandoNuevaTransaccion = false;
             refrescar();
+            registrarReciente();
         });
         comboPerfil.addActionListener(e -> {
             if (actualizandoCombos) {
@@ -81,6 +93,7 @@ public class AppWindow extends JFrame {
             }
             mostrandoNuevaTransaccion = false;
             refrescar();
+            registrarReciente();
         });
         comboModo.addActionListener(e -> {
             mostrandoNuevaTransaccion = false;
@@ -92,6 +105,9 @@ public class AppWindow extends JFrame {
             mostrandoNuevaTransaccion = true;
             refrescar();
         });
+
+        botonFavorito.addActionListener(e -> alternarFavorito());
+        Atajos.registrar(getRootPane(), Atajos.FAVORITO, this::alternarFavorito);
 
         JButton renombrarPerfil = new JButton("Renombrar", Icons.editar());
         renombrarPerfil.addActionListener(e -> renombrarPerfilSeleccionado());
@@ -112,6 +128,7 @@ public class AppWindow extends JFrame {
         filaTransaccion.add(comboGrupo);
         filaTransaccion.add(new JLabel("Transacción:"));
         filaTransaccion.add(comboPerfil);
+        filaTransaccion.add(botonFavorito);
         filaTransaccion.add(renombrarPerfil);
         filaTransaccion.add(eliminarPerfil);
 
@@ -153,19 +170,61 @@ public class AppWindow extends JFrame {
         });
     }
 
-    /** Rellena el combo de grupos (en orden de aparición) y deja seleccionado el indicado. */
+    private static boolean esGrupoVirtual(Object grupo) {
+        return GRUPO_FAVORITOS.equals(grupo) || GRUPO_RECIENTES.equals(grupo);
+    }
+
+    /** Perfiles de un grupo: los de Favoritos/Recientes salen de las preferencias (ignorando los que ya no existen). */
+    private List<Profile> perfilesDelGrupo(String grupo) {
+        List<Profile> resultado = new ArrayList<>();
+        if (esGrupoVirtual(grupo)) {
+            List<String> nombres = GRUPO_FAVORITOS.equals(grupo) ? preferencias.favoritos() : preferencias.recientes();
+            for (String nombre : nombres) {
+                for (Profile p : perfiles) {
+                    if (nombre.equals(p.nombre)) {
+                        resultado.add(p);
+                        break;
+                    }
+                }
+            }
+        } else {
+            for (Profile p : perfiles) {
+                if (p.grupo().equals(grupo)) {
+                    resultado.add(p);
+                }
+            }
+        }
+        return resultado;
+    }
+
+    /**
+     * Rellena el combo de grupos y deja seleccionado el indicado. Primero van
+     * Favoritos y Recientes (si tienen algo) y después los grupos reales, en
+     * orden de aparición. Si el perfil pedido no está en el grupo elegido (p.
+     * ej. se acaba de quitar de favoritos), se muestra en su grupo real.
+     */
     private void cargarGrupos(String grupoASeleccionar, Profile perfilASeleccionar) {
         actualizandoCombos = true;
         try {
             Set<String> grupos = new LinkedHashSet<>();
+            if (!perfilesDelGrupo(GRUPO_FAVORITOS).isEmpty()) {
+                grupos.add(GRUPO_FAVORITOS);
+            }
+            if (!perfilesDelGrupo(GRUPO_RECIENTES).isEmpty()) {
+                grupos.add(GRUPO_RECIENTES);
+            }
             for (Profile p : perfiles) {
                 grupos.add(p.grupo());
+            }
+            String elegido = grupos.contains(grupoASeleccionar) ? grupoASeleccionar : grupos.iterator().next();
+            if (perfilASeleccionar != null && !perfilesDelGrupo(elegido).contains(perfilASeleccionar)) {
+                elegido = perfilASeleccionar.grupo();
             }
             comboGrupo.removeAllItems();
             for (String g : grupos) {
                 comboGrupo.addItem(g);
             }
-            comboGrupo.setSelectedItem(grupos.contains(grupoASeleccionar) ? grupoASeleccionar : grupos.iterator().next());
+            comboGrupo.setSelectedItem(elegido);
         } finally {
             actualizandoCombos = false;
         }
@@ -177,21 +236,60 @@ public class AppWindow extends JFrame {
         actualizandoCombos = true;
         try {
             modeloPerfiles.removeAllElements();
-            Profile primero = null;
-            for (Profile p : perfiles) {
-                if (p.grupo().equals(grupo)) {
-                    modeloPerfiles.addElement(p);
-                    if (primero == null) {
-                        primero = p;
-                    }
-                }
+            List<Profile> delGrupo = perfilesDelGrupo(grupo);
+            for (Profile p : delGrupo) {
+                modeloPerfiles.addElement(p);
             }
-            Profile elegido = perfilASeleccionar != null && perfilASeleccionar.grupo().equals(grupo)
-                    ? perfilASeleccionar : primero;
+            Profile elegido = perfilASeleccionar != null && delGrupo.contains(perfilASeleccionar)
+                    ? perfilASeleccionar : (delGrupo.isEmpty() ? null : delGrupo.get(0));
             modeloPerfiles.setSelectedItem(elegido);
         } finally {
             actualizandoCombos = false;
         }
+    }
+
+    /** Si estamos viendo Favoritos/Recientes se queda ahí; si no, en el grupo real del perfil. */
+    private String grupoParaMantener(Profile perfil) {
+        Object actual = comboGrupo.getSelectedItem();
+        if (esGrupoVirtual(actual)) {
+            return (String) actual;
+        }
+        return perfil != null ? perfil.grupo() : (String) actual;
+    }
+
+    /** Recarga los combos (p. ej. tras cambiar favoritos o recientes) sin tocar el panel ni lo que haya escrito. */
+    private void sincronizarCombos() {
+        Profile actual = (Profile) comboPerfil.getSelectedItem();
+        cargarGrupos(grupoParaMantener(actual), actual);
+        actualizarBotonFavorito();
+    }
+
+    /** Anota como reciente el perfil que el usuario acaba de abrir (no al elegir dentro de Recientes, para no reordenarla). */
+    private void registrarReciente() {
+        Profile actual = (Profile) comboPerfil.getSelectedItem();
+        if (actual == null || GRUPO_RECIENTES.equals(comboGrupo.getSelectedItem())) {
+            return;
+        }
+        preferencias.registrarReciente(actual.nombre);
+        sincronizarCombos();
+    }
+
+    private void alternarFavorito() {
+        Profile actual = (Profile) comboPerfil.getSelectedItem();
+        if (actual == null) {
+            return;
+        }
+        preferencias.alternarFavorito(actual.nombre);
+        sincronizarCombos();
+    }
+
+    private void actualizarBotonFavorito() {
+        Profile actual = (Profile) comboPerfil.getSelectedItem();
+        boolean favorito = actual != null && preferencias.esFavorito(actual.nombre);
+        botonFavorito.setEnabled(actual != null);
+        botonFavorito.setIcon(favorito ? Icons.favorito() : Icons.favoritoVacio());
+        botonFavorito.setToolTipText((favorito ? "Quitar de favoritos" : "Marcar como favorito")
+                + " (" + Atajos.texto(Atajos.FAVORITO) + ")");
     }
 
     private void refrescar() {
@@ -208,15 +306,19 @@ public class AppWindow extends JFrame {
 
         centro.revalidate();
         centro.repaint();
+        actualizarBotonFavorito();
     }
 
     /** Abre el buscador rápido y salta al perfil elegido, manteniendo el modo (Cifrar/Descifrar) actual. */
     private void buscarPerfil() {
-        new BuscadorPerfiles(this, perfiles, elegido -> {
+        new BuscadorPerfiles(this, perfiles, preferencias, elegido -> {
             mostrandoNuevaTransaccion = false;
             cargarGrupos(elegido.grupo(), elegido);
             refrescar();
+            preferencias.registrarReciente(elegido.nombre);
         }).setVisible(true);
+        // Aunque no se elija nada, en el buscador pudieron marcarse o quitarse favoritos.
+        sincronizarCombos();
     }
 
     private void renombrarPerfilSeleccionado() {
@@ -253,9 +355,11 @@ public class AppWindow extends JFrame {
         try {
             seleccionado.nombre = nuevoNombre;
             Profile.saveAll(archivoPerfiles, perfiles);
+            preferencias.renombrar(nombreAnterior, nuevoNombre);
             // El grupo puede haber cambiado; se recargan los combos sin refrescar el panel
             // para no perder lo que haya escrito en el formulario.
-            cargarGrupos(seleccionado.grupo(), seleccionado);
+            cargarGrupos(grupoParaMantener(seleccionado), seleccionado);
+            actualizarBotonFavorito();
         } catch (IOException ex) {
             seleccionado.nombre = nombreAnterior;
             JOptionPane.showMessageDialog(this,
@@ -290,6 +394,7 @@ public class AppWindow extends JFrame {
         try {
             perfiles.remove(seleccionado);
             Profile.saveAll(archivoPerfiles, perfiles);
+            preferencias.eliminar(seleccionado.nombre);
             // Si el grupo se quedó sin transacciones, cargarGrupos elige otro.
             cargarGrupos(seleccionado.grupo(), null);
             mostrandoNuevaTransaccion = false;

@@ -3,6 +3,7 @@ package com.example.httpclientreval.ui;
 import com.example.httpclientreval.crypto.AES256CBC;
 import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
+import com.formdev.flatlaf.FlatClientProperties;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -13,6 +14,7 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.io.IOException;
@@ -39,7 +41,9 @@ public class NewProfilePanel extends JPanel {
     private final String wsseUsernameDefault;
     private final String wssePasswordDefault;
 
-    public NewProfilePanel(Path archivoPerfiles, List<Profile> perfiles, Consumer<Profile> alGuardar) {
+    /** {@code alCancelar} se invoca al pulsar la X de arriba a la derecha: el llamador vuelve a la pantalla principal. */
+    public NewProfilePanel(Path archivoPerfiles, List<Profile> perfiles, Consumer<Profile> alGuardar,
+                           Runnable alCancelar) {
         super(new BorderLayout(8, 8));
         this.archivoPerfiles = archivoPerfiles;
         this.perfiles = perfiles;
@@ -81,6 +85,20 @@ public class NewProfilePanel extends JPanel {
         accion.add(statusBanner, BorderLayout.CENTER);
         accion.add(botones, BorderLayout.EAST);
 
+        JLabel titulo = new JLabel("Nueva transacción");
+        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 14f));
+
+        JButton cancelar = new JButton(Icons.cancelar());
+        cancelar.setToolTipText("Cancelar y volver a la pantalla principal");
+        cancelar.setFocusable(false);
+        cancelar.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        cancelar.addActionListener(e -> alCancelar.run());
+
+        JPanel encabezado = new JPanel(new BorderLayout());
+        encabezado.add(titulo, BorderLayout.WEST);
+        encabezado.add(cancelar, BorderLayout.EAST);
+
+        add(encabezado, BorderLayout.NORTH);
         add(tabs, BorderLayout.CENTER);
         add(accion, BorderLayout.SOUTH);
     }
@@ -90,9 +108,9 @@ public class NewProfilePanel extends JPanel {
         GridBagConstraints gbc = FormFields.gbc();
         int[] fila = {0};
         FormFields.agregarCampo(panel, gbc, fila, campos, "Nombre", "");
-        FormFields.agregarCampo(panel, gbc, fila, campos, "LlaveAes", llaveAesDefault);
+        FormFields.agregarCampoSecreto(panel, gbc, fila, campos, "LlaveAes", llaveAesDefault);
         FormFields.agregarCampo(panel, gbc, fila, campos, "WsseUsername", wsseUsernameDefault);
-        FormFields.agregarCampo(panel, gbc, fila, campos, "WssePassword", wssePasswordDefault);
+        FormFields.agregarCampoSecreto(panel, gbc, fila, campos, "WssePassword", wssePasswordDefault);
         FormFields.agregarSeccion(panel, gbc, fila, "Datos del sobre (_header)");
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdCliente", "");
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdTransaccion (sobre)", "");

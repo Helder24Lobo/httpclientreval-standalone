@@ -1,10 +1,14 @@
 package com.example.httpclientreval.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
+
 import javax.swing.BorderFactory;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JScrollPane;
 import javax.swing.JTextField;
+import javax.swing.JToggleButton;
 import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -48,6 +52,43 @@ final class FormFields {
         panel.add(new JLabel(etiqueta + ":"), gbc);
 
         JTextField campo = new JTextField(valorPorDefecto == null ? "" : valorPorDefecto, 22);
+        campos.put(etiqueta, campo);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        panel.add(campo, gbc);
+    }
+
+    /**
+     * Igual que {@link #agregarCampo}, pero para secretos (llave AES, contraseñas): el campo enmascara lo
+     * escrito y un botón con un ojo lo muestra u oculta. Sigue registrado en {@code campos} como JTextField
+     * (un JPasswordField lo es), así que se lee con getText() como los demás.
+     */
+    static void agregarCampoSecreto(JPanel panel, GridBagConstraints gbc, int[] fila,
+                                    Map<String, JTextField> campos, String etiqueta, String valorPorDefecto) {
+        gbc.gridx = 0;
+        gbc.gridy = fila[0]++;
+        gbc.weightx = 0;
+        panel.add(new JLabel(etiqueta + ":"), gbc);
+
+        JPasswordField campo = new JPasswordField(valorPorDefecto == null ? "" : valorPorDefecto, 22);
+        char ecoOculto = campo.getEchoChar();
+
+        JToggleButton ver = new JToggleButton(Icons.ojo());
+        ver.setToolTipText("Mostrar");
+        ver.setFocusable(false);
+        ver.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
+        ver.addActionListener(e -> {
+            boolean mostrar = ver.isSelected();
+            campo.setEchoChar(mostrar ? (char) 0 : ecoOculto);
+            // Un JPasswordField bloquea copiar/cortar siempre; solo se permite mientras el secreto está a la vista.
+            campo.putClientProperty("JPasswordField.cutCopyAllowed", mostrar);
+            ver.setIcon(mostrar ? Icons.ojoTachado() : Icons.ojo());
+            ver.setToolTipText(mostrar ? "Ocultar" : "Mostrar");
+        });
+
+        // El ojo va dentro del recuadro para que todos los campos midan lo mismo.
+        campo.putClientProperty(FlatClientProperties.TEXT_FIELD_TRAILING_COMPONENT, ver);
+
         campos.put(etiqueta, campo);
         gbc.gridx = 1;
         gbc.weightx = 1;

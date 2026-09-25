@@ -67,6 +67,18 @@ final class Icons {
         return icono("historial");
     }
 
+    static Icon ojo() {
+        return icono("ojo");
+    }
+
+    static Icon ojoTachado() {
+        return icono("ojo-tachado");
+    }
+
+    static Icon cancelar() {
+        return icono("cancelar");
+    }
+
     static Icon favorito() {
         return icono("favorito");
     }

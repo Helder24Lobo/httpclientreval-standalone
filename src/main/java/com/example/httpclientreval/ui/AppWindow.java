@@ -303,7 +303,8 @@ public class AppWindow extends JFrame {
         centro.removeAll();
 
         if (mostrandoNuevaTransaccion) {
-            centro.add(new NewProfilePanel(archivoPerfiles, perfiles, this::alGuardarPerfil), BorderLayout.CENTER);
+            centro.add(new NewProfilePanel(archivoPerfiles, perfiles, this::alGuardarPerfil, this::alCancelarNuevaTransaccion),
+                    BorderLayout.CENTER);
         } else if (comboModo.getSelectedIndex() == 0) {
             centro.add(new EncryptPanel((Profile) comboPerfil.getSelectedItem(),
                     () -> Profile.saveAll(archivoPerfiles, perfiles)), BorderLayout.CENTER);
@@ -421,6 +422,12 @@ public class AppWindow extends JFrame {
                     "No se pudo actualizar profiles.json: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    /** Sale de "Nueva transacción" sin guardar y vuelve a la pantalla principal (perfil y modo que estaban elegidos). */
+    private void alCancelarNuevaTransaccion() {
+        mostrandoNuevaTransaccion = false;
+        refrescar();
     }
 
     private void alGuardarPerfil(Profile nuevo) {

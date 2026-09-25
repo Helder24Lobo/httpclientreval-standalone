@@ -7,7 +7,7 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
-/** Atajos de teclado de la app: Ctrl (Cmd en macOS) + Enter / K / L / G / D. */
+/** Atajos de teclado de la app: Ctrl (Cmd en macOS) + Enter / K / L / G / D / H. */
 final class Atajos {
 
     static final KeyStroke ENVIAR = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, mascara());
@@ -15,6 +15,7 @@ final class Atajos {
     static final KeyStroke LIMPIAR = KeyStroke.getKeyStroke(KeyEvent.VK_L, mascara());
     static final KeyStroke GENERAR = KeyStroke.getKeyStroke(KeyEvent.VK_G, mascara());
     static final KeyStroke FAVORITO = KeyStroke.getKeyStroke(KeyEvent.VK_D, mascara());
+    static final KeyStroke HISTORIAL = KeyStroke.getKeyStroke(KeyEvent.VK_H, mascara());
 
     private Atajos() {
     }

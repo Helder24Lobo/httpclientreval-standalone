@@ -63,6 +63,10 @@ final class Icons {
         return icono("buscar");
     }
 
+    static Icon historial() {
+        return icono("historial");
+    }
+
     static Icon favorito() {
         return icono("favorito");
     }

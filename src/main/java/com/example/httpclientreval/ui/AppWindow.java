@@ -44,6 +44,7 @@ public class AppWindow extends JFrame {
 
     private final PerfilesPreferencias preferencias = PerfilesPreferencias.instancia();
     private final JButton botonFavorito = new JButton();
+    private HistorialDialog historialDialog;
     private final List<Profile> perfiles;
     private final Path archivoPerfiles;
     private final JComboBox<String> comboGrupo = new JComboBox<>();
@@ -120,6 +121,11 @@ public class AppWindow extends JFrame {
         buscarPerfil.addActionListener(e -> buscarPerfil());
         Atajos.registrar(getRootPane(), Atajos.BUSCAR, this::buscarPerfil);
 
+        JButton historialEnvios = new JButton("Historial", Icons.historial());
+        historialEnvios.setToolTipText("Historial de envíos de la sesión (" + Atajos.texto(Atajos.HISTORIAL) + ")");
+        historialEnvios.addActionListener(e -> abrirHistorial());
+        Atajos.registrar(getRootPane(), Atajos.HISTORIAL, this::abrirHistorial);
+
         JButton configuracion = new JButton("Configuración", Icons.configuracion());
         configuracion.addActionListener(e -> abrirConfiguracion());
 
@@ -137,6 +143,7 @@ public class AppWindow extends JFrame {
         filaAcciones.add(comboModo);
         filaAcciones.add(nuevaTransaccion);
         filaAcciones.add(buscarPerfil);
+        filaAcciones.add(historialEnvios);
         filaAcciones.add(configuracion);
 
         JPanel norte = new JPanel();
@@ -319,6 +326,15 @@ public class AppWindow extends JFrame {
         }).setVisible(true);
         // Aunque no se elija nada, en el buscador pudieron marcarse o quitarse favoritos.
         sincronizarCombos();
+    }
+
+    /** Abre (o trae al frente) el historial de envíos; es una sola ventana que se reutiliza. */
+    private void abrirHistorial() {
+        if (historialDialog == null) {
+            historialDialog = new HistorialDialog(this);
+        }
+        historialDialog.setVisible(true);
+        historialDialog.toFront();
     }
 
     private void renombrarPerfilSeleccionado() {

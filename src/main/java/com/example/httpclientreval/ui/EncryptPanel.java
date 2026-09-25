@@ -2,12 +2,10 @@ package com.example.httpclientreval.ui;
 
 import com.example.httpclientreval.crypto.AES256CBC;
 import com.example.httpclientreval.model.Envelope;
+import com.example.httpclientreval.model.EnvioRegistrado;
 import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
-import com.example.httpclientreval.model.RespuestaNegocioParser;
-import com.example.httpclientreval.model.SoapHttpClient;
 import com.example.httpclientreval.model.SoapRequestBuilder;
-import com.example.httpclientreval.model.SoapResponseParser;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -336,10 +334,11 @@ public class EncryptPanel extends JPanel {
         EnviandoDialog dialogo = new EnviandoDialog(SwingUtilities.getWindowAncestor(this),
                 "Enviando la petición al webservice...");
 
-        SwingWorker<SoapHttpClient.Respuesta, Void> worker = new SwingWorker<>() {
+        String soap = ultimoSoapGenerado;
+        SwingWorker<EnvioRegistrado, Void> worker = new SwingWorker<>() {
             @Override
-            protected SoapHttpClient.Respuesta doInBackground() throws Exception {
-                return SoapHttpClient.enviar(ultimoSoapGenerado);
+            protected EnvioRegistrado doInBackground() {
+                return EnvioRegistrado.enviar(perfil, soap);
             }
 
             @Override
@@ -347,53 +346,9 @@ public class EncryptPanel extends JPanel {
                 dialogo.dispose();
                 botonEnviar.setEnabled(true);
                 try {
-                    SoapHttpClient.Respuesta respuesta = get();
-                    boolean exitoHttp = respuesta.statusCode >= 200 && respuesta.statusCode < 300;
-                    salidaHttp.setBadge(respuesta.statusCode + " · " + respuesta.tiempoMs + "ms", exitoHttp);
-                    // El código HTTP ya va en el badge; así el cuerpo queda como XML/JSON puro y se puede formatear.
-                    salidaHttp.setTexto(respuesta.cuerpo);
-
-                    String resultCifrado = SoapResponseParser.extraerObjRequestResult(respuesta.cuerpo);
-                    RespuestaNegocioParser.Resultado resultadoNegocio = null;
-
-                    if (resultCifrado == null) {
-                        salidaResultCifrado.setTexto("(No se encontró OBJRequestResult en la respuesta)");
-                    } else {
-                        salidaResultCifrado.setTexto(resultCifrado);
-                        try {
-                            String plano = AES256CBC.decryptWithPrependedIV(resultCifrado, perfil.llaveAes);
-                            salidaResultPlano.setTexto(plano);
-
-                            resultadoNegocio = RespuestaNegocioParser.parsear(plano);
-                            if (resultadoNegocio.codigo != null) {
-                                salidaResultPlano.setBadge("Código " + resultadoNegocio.codigo, resultadoNegocio.esExitoso());
-                            }
-                        } catch (Exception exDescifrado) {
-                            salidaResultPlano.setTexto("No se pudo descifrar: " + exDescifrado.getMessage());
-                        }
-                    }
-
-                    if (!exitoHttp) {
-                        statusBanner.mostrarErrorHttp("Respuesta del WS con error HTTP " + respuesta.statusCode);
-                    } else if (resultadoNegocio != null && resultadoNegocio.codigo != null) {
-                        if (resultadoNegocio.esExitoso()) {
-                            String msg = "Proceso exitoso (Código 0 · HTTP " + respuesta.statusCode + " · " + respuesta.tiempoMs + "ms)";
-                            if (resultadoNegocio.mensaje != null && !resultadoNegocio.mensaje.isBlank()) {
-                                msg += ": " + resultadoNegocio.mensaje;
-                            }
-                            statusBanner.mostrarExito(msg);
-                        } else {
-                            String msg = "Error de negocio (Código " + resultadoNegocio.codigo + ")";
-                            if (resultadoNegocio.mensaje != null && !resultadoNegocio.mensaje.isBlank()) {
-                                msg += ": " + resultadoNegocio.mensaje;
-                            }
-                            statusBanner.mostrarErrorNegocio(msg);
-                        }
-                    } else if (resultCifrado == null) {
-                        statusBanner.mostrarError("Respuesta HTTP " + respuesta.statusCode + " recibida pero sin OBJRequestResult.");
-                    } else {
-                        statusBanner.mostrarError("Respuesta HTTP " + respuesta.statusCode + " recibida pero no se pudo determinar el código de negocio.");
-                    }
+                    EnvioRegistrado envio = get();
+                    HistorialEnvios.instancia().agregar(envio);
+                    mostrarResultadoEnvio(envio);
                 } catch (Exception ex) {
                     Throwable causa = ex.getCause() != null ? ex.getCause() : ex;
                     salidaHttp.setBadge("Error", false);
@@ -403,6 +358,58 @@ public class EncryptPanel extends JPanel {
         };
         worker.execute();
         dialogo.setVisible(true); // bloquea aquí (modal) hasta que done() llame dialogo.dispose()
+    }
+
+    /** Vuelca un envío ya resuelto en las salidas y el banner de estado. */
+    private void mostrarResultadoEnvio(EnvioRegistrado envio) {
+        if (envio.statusCode == null) {
+            salidaHttp.setBadge("Error", false);
+            mostrarError("Error al enviar: " + envio.errorEnvio);
+            return;
+        }
+
+        salidaHttp.setBadge(envio.statusCode + " · " + envio.tiempoMs + "ms", envio.exitoHttp());
+        // El código HTTP ya va en el badge; así el cuerpo queda como XML/JSON puro y se puede formatear.
+        salidaHttp.setTexto(envio.cuerpo);
+
+        if (envio.resultadoCifrado == null) {
+            salidaResultCifrado.setTexto("(No se encontró OBJRequestResult en la respuesta)");
+        } else {
+            salidaResultCifrado.setTexto(envio.resultadoCifrado);
+            if (envio.resultadoPlano != null) {
+                salidaResultPlano.setTexto(envio.resultadoPlano);
+                if (envio.codigoNegocio != null) {
+                    salidaResultPlano.setBadge("Código " + envio.codigoNegocio, envio.codigoNegocio == 0);
+                }
+            } else {
+                salidaResultPlano.setTexto("No se pudo descifrar: " + envio.errorDescifrado);
+            }
+        }
+
+        switch (envio.resultado()) {
+            case ERROR_HTTP:
+                statusBanner.mostrarErrorHttp("Respuesta del WS con error HTTP " + envio.statusCode);
+                break;
+            case EXITO:
+                statusBanner.mostrarExito(conMensaje("Proceso exitoso (Código 0 · HTTP " + envio.statusCode
+                        + " · " + envio.tiempoMs + "ms)", envio.mensajeNegocio));
+                break;
+            case ERROR_NEGOCIO:
+                statusBanner.mostrarErrorNegocio(conMensaje("Error de negocio (Código " + envio.codigoNegocio + ")",
+                        envio.mensajeNegocio));
+                break;
+            default:
+                if (envio.resultadoCifrado == null) {
+                    statusBanner.mostrarError("Respuesta HTTP " + envio.statusCode + " recibida pero sin OBJRequestResult.");
+                } else {
+                    statusBanner.mostrarError("Respuesta HTTP " + envio.statusCode
+                            + " recibida pero no se pudo determinar el código de negocio.");
+                }
+        }
+    }
+
+    private static String conMensaje(String base, String mensaje) {
+        return mensaje != null && !mensaje.isBlank() ? base + ": " + mensaje : base;
     }
 
     /** Vuelve todos los campos a los defaults del perfil y borra las salidas, para armar la siguiente transacción. */

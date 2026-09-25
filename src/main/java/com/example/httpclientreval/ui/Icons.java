@@ -51,6 +51,10 @@ final class Icons {
         return icono("copiar");
     }
 
+    static Icon expandir() {
+        return icono("expandir");
+    }
+
     static Icon editar() {
         return icono("editar");
     }

@@ -10,11 +10,15 @@ import org.fife.ui.rtextarea.RTextScrollPane;
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
 import javax.swing.JLabel;
+import javax.swing.JDialog;
 import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Dialog;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Window;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -34,8 +38,15 @@ public class OutputBlock extends JPanel {
     private final JLabel badge = new JLabel(" ");
     private String textoOriginal = "";
 
+    private final String titulo;
+
     public OutputBlock(String titulo) {
+        this(titulo, true);
+    }
+
+    private OutputBlock(String titulo, boolean expandible) {
         super(new BorderLayout(4, 4));
+        this.titulo = titulo;
         setBorder(BorderFactory.createEmptyBorder(4, 0, 0, 0));
 
         area.setEditable(false);
@@ -59,7 +70,16 @@ public class OutputBlock extends JPanel {
 
         JPanel norte = new JPanel(new BorderLayout());
         norte.add(izquierda, BorderLayout.WEST);
-        norte.add(copiar, BorderLayout.EAST);
+
+        JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        botones.add(copiar);
+        if (expandible) {
+            JButton expandir = new JButton(Icons.expandir());
+            expandir.setToolTipText("Expandir");
+            expandir.addActionListener(e -> expandir());
+            botones.add(expandir);
+        }
+        norte.add(botones, BorderLayout.EAST);
 
         RTextScrollPane scroll = new RTextScrollPane(area);
         scroll.setFoldIndicatorEnabled(true);
@@ -69,6 +89,22 @@ public class OutputBlock extends JPanel {
 
         add(norte, BorderLayout.NORTH);
         add(scroll, BorderLayout.CENTER);
+    }
+
+    /** Abre el contenido en una ventana grande para leerlo completo. */
+    private void expandir() {
+        Window padre = SwingUtilities.getWindowAncestor(this);
+        JDialog dialogo = new JDialog(padre, titulo, Dialog.ModalityType.MODELESS);
+        OutputBlock copia = new OutputBlock(titulo, false);
+        copia.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
+        copia.setTexto(textoOriginal);
+        if (badge.isVisible()) {
+            copia.setBadge(badge.getText(), badge.getBackground().equals(new Color(46, 125, 50)));
+        }
+        dialogo.setContentPane(copia);
+        dialogo.setSize(1000, 700);
+        dialogo.setLocationRelativeTo(padre);
+        dialogo.setVisible(true);
     }
 
     /** Se invoca al cambiar el look and feel: los colores del editor vienen de su propio tema, hay que reaplicarlo. */

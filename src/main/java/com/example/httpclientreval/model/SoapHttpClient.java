@@ -20,6 +20,14 @@ public class SoapHttpClient {
     private static final String CONTENT_TYPE = "text/xml; charset=utf-8";
     private static final Duration TIMEOUT = Duration.ofSeconds(30);
 
+    /**
+     * Cliente único para toda la app: es inmutable y seguro entre hilos, y al reutilizarlo se
+     * aprovechan las conexiones ya abiertas (y la sesión TLS) en vez de renegociarlas en cada envío.
+     */
+    private static final HttpClient CLIENT = HttpClient.newBuilder()
+            .connectTimeout(TIMEOUT)
+            .build();
+
     private SoapHttpClient() {
     }
 
@@ -37,10 +45,6 @@ public class SoapHttpClient {
 
     /** Envía el XML SOAP y devuelve el código HTTP, el body crudo y cuánto tardó la petición. */
     public static Respuesta enviar(String soapXml) throws IOException, InterruptedException {
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(TIMEOUT)
-                .build();
-
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(URL))
                 .timeout(TIMEOUT)
@@ -50,7 +54,7 @@ public class SoapHttpClient {
                 .build();
 
         long inicio = System.currentTimeMillis();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
         long tiempoMs = System.currentTimeMillis() - inicio;
 
         return new Respuesta(response.statusCode(), response.body(), tiempoMs);

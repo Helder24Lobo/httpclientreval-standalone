@@ -4,10 +4,14 @@ import com.example.httpclientreval.model.EnvioRegistrado;
 import com.example.httpclientreval.model.SoapHttpClient;
 
 import javax.swing.BorderFactory;
+import javax.swing.DefaultComboBoxModel;
+import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -24,6 +28,7 @@ import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -49,6 +54,12 @@ final class HistorialDialog extends JDialog {
     private final JButton reenviar = new JButton("Reenviar", Icons.enviar());
     private final JButton vaciar = new JButton("Vaciar historial", Icons.limpiar());
 
+    private final DefaultComboBoxModel<EnvioRegistrado> modeloComparar = new DefaultComboBoxModel<>();
+    private final JComboBox<EnvioRegistrado> comboComparar = new JComboBox<>(modeloComparar);
+    private final DiffPanel diffPeticion = new DiffPanel();
+    private final DiffPanel diffRespuestaHttp = new DiffPanel();
+    private final DiffPanel diffRespuestaClaro = new DiffPanel();
+
     HistorialDialog(JFrame padre) {
         super(padre, "Historial de envíos", false);
         setDefaultCloseOperation(HIDE_ON_CLOSE);
@@ -73,11 +84,42 @@ final class HistorialDialog extends JDialog {
         reenviar.addActionListener(e -> reenviarSeleccionado());
         vaciar.addActionListener(e -> historial.vaciar());
 
+        // En el combo se ve "hora · perfil · resultado", no toString(): el nombre del perfil ya identifica la
+        // transacción y así se distinguen envíos de la misma hora sin alargar cada opción con el XML completo.
+        comboComparar.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> lista, Object valor, int indice,
+                                                          boolean seleccionado, boolean conFoco) {
+                Object texto = valor instanceof EnvioRegistrado ? etiqueta((EnvioRegistrado) valor) : valor;
+                return super.getListCellRendererComponent(lista, texto, indice, seleccionado, conFoco);
+            }
+        });
+        comboComparar.addActionListener(e -> actualizarDiferencias());
+
+        JLabel etiquetaComparar = new JLabel("Comparar el envío seleccionado con:");
+        Accesibilidad.etiquetar(etiquetaComparar, comboComparar, "Comparar con");
+
+        JPanel compararCon = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        compararCon.add(etiquetaComparar);
+        compararCon.add(comboComparar);
+
+        JTabbedPane subTabsDiferencias = new JTabbedPane();
+        Accesibilidad.nombrar(subTabsDiferencias, "Diferencias por sección");
+        subTabsDiferencias.addTab("Petición", diffPeticion);
+        subTabsDiferencias.addTab("Respuesta HTTP", diffRespuestaHttp);
+        subTabsDiferencias.addTab("Respuesta en claro", diffRespuestaClaro);
+
+        JPanel panelDiferencias = new JPanel(new BorderLayout(0, 6));
+        panelDiferencias.setBorder(BorderFactory.createEmptyBorder(6, 0, 0, 0));
+        panelDiferencias.add(compararCon, BorderLayout.NORTH);
+        panelDiferencias.add(subTabsDiferencias, BorderLayout.CENTER);
+
         JTabbedPane detalle = new JTabbedPane();
         Accesibilidad.nombrar(detalle, "Detalle del envío seleccionado");
         detalle.addTab("Petición", salidaPeticion);
         detalle.addTab("Respuesta HTTP", salidaRespuesta);
         detalle.addTab("Respuesta en claro", salidaPlano);
+        detalle.addTab("Diferencias", panelDiferencias);
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         botones.add(reenviar);
@@ -135,6 +177,9 @@ final class HistorialDialog extends JDialog {
             salidaRespuesta.ocultarBadge();
             salidaPlano.setTexto("");
             salidaPlano.ocultarBadge();
+            modeloComparar.removeAllElements();
+            comboComparar.setEnabled(false);
+            actualizarDiferencias();
             return;
         }
 
@@ -162,6 +207,84 @@ final class HistorialDialog extends JDialog {
                     ? "No se pudo descifrar: " + envio.errorDescifrado
                     : "(Sin respuesta en claro para este envío)");
         }
+
+        actualizarComboComparar(envio);
+    }
+
+    /**
+     * Repuebla el combo "Comparar con" con todos los envíos salvo el seleccionado, y de una vez elige
+     * el más útil: el envío anterior de la MISMA transacción si hay uno (p. ej., tras un Reenviar el
+     * combo ya queda en el envío original), o si no el inmediatamente anterior en el tiempo.
+     */
+    private void actualizarComboComparar(EnvioRegistrado seleccionado) {
+        List<EnvioRegistrado> envios = historial.envios();
+        int indice = envios.indexOf(seleccionado);
+
+        EnvioRegistrado porDefecto = null;
+        List<EnvioRegistrado> otros = new ArrayList<>();
+        for (int i = 0; i < envios.size(); i++) {
+            if (i == indice) {
+                continue;
+            }
+            EnvioRegistrado candidato = envios.get(i);
+            otros.add(candidato);
+            if (porDefecto == null && i > indice && candidato.perfilNombre.equals(seleccionado.perfilNombre)) {
+                porDefecto = candidato;
+            }
+        }
+        if (porDefecto == null && !otros.isEmpty()) {
+            // Sin otro envío de la misma transacción: el más cercano en el tiempo es mejor que nada.
+            porDefecto = indice + 1 < envios.size() ? envios.get(indice + 1) : otros.get(0);
+        }
+
+        modeloComparar.removeAllElements();
+        for (EnvioRegistrado o : otros) {
+            modeloComparar.addElement(o);
+        }
+        comboComparar.setEnabled(!otros.isEmpty());
+        modeloComparar.setSelectedItem(porDefecto);
+        actualizarDiferencias();
+    }
+
+    private void actualizarDiferencias() {
+        EnvioRegistrado actual = seleccionado();
+        EnvioRegistrado contraparte = (EnvioRegistrado) modeloComparar.getSelectedItem();
+
+        if (actual == null || contraparte == null) {
+            String mensaje = actual == null ? "Selecciona un envío en la lista." : "No hay otro envío con el que comparar.";
+            diffPeticion.mostrarVacio(mensaje);
+            diffRespuestaHttp.mostrarVacio(mensaje);
+            diffRespuestaClaro.mostrarVacio(mensaje);
+            return;
+        }
+
+        // "A" es siempre el más antiguo de los dos y "B" el más nuevo, sin importar cuál esté "seleccionado"
+        // en la tabla: así el diff siempre se lee como "de A a B" en vez de saltar de signo según el orden de clic.
+        EnvioRegistrado a = contraparte.hora.isAfter(actual.hora) ? actual : contraparte;
+        EnvioRegistrado b = contraparte.hora.isAfter(actual.hora) ? contraparte : actual;
+
+        diffPeticion.mostrar(formatoDiff(a.soapEnviado), formatoDiff(b.soapEnviado));
+        diffRespuestaHttp.mostrar(formatoDiff(textoRespuesta(a)), formatoDiff(textoRespuesta(b)));
+        diffRespuestaClaro.mostrar(formatoDiff(textoClaro(a)), formatoDiff(textoClaro(b)));
+    }
+
+    private static String formatoDiff(String texto) {
+        return FormatoSalida.formatear(texto).texto;
+    }
+
+    private static String textoRespuesta(EnvioRegistrado e) {
+        return e.statusCode == null ? "(Sin respuesta: " + e.errorEnvio + ")" : e.cuerpo;
+    }
+
+    private static String textoClaro(EnvioRegistrado e) {
+        if (e.resultadoPlano != null) {
+            return e.resultadoPlano;
+        }
+        return e.errorDescifrado != null ? "(No se pudo descifrar: " + e.errorDescifrado + ")" : "(Sin respuesta en claro)";
+    }
+
+    private String etiqueta(EnvioRegistrado e) {
+        return HORA.format(e.hora) + " · " + e.perfilNombre + " · " + e.resumen();
     }
 
     private void reenviarSeleccionado() {
@@ -192,7 +315,8 @@ final class HistorialDialog extends JDialog {
                 try {
                     EnvioRegistrado nuevo = get();
                     historial.agregar(nuevo);
-                    // El nuevo envío queda arriba y seleccionado, listo para comparar con el original.
+                    // El nuevo envío queda arriba y seleccionado; la pestaña "Diferencias" ya lo compara
+                    // contra el original (mismo perfilNombre), sin que haya que elegirlo a mano.
                     tabla.setRowSelectionInterval(0, 0);
                     tabla.scrollRectToVisible(tabla.getCellRect(0, 0, true));
                 } catch (Exception ex) {

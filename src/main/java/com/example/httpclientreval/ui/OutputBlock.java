@@ -37,7 +37,9 @@ public class OutputBlock extends JPanel {
 
     private final RSyntaxTextArea area = new RSyntaxTextArea();
     private final JLabel badge = new JLabel(" ");
+    private final JButton copiarCurl;
     private String textoOriginal = "";
+    private java.util.function.Supplier<String> generadorCurl;
 
     private final String titulo;
 
@@ -69,6 +71,18 @@ public class OutputBlock extends JPanel {
         // Hay varios "Copiar" en pantalla: el nombre accesible dice de cuál bloque es cada uno.
         Accesibilidad.nombrar(copiar, "Copiar " + titulo);
 
+        // Solo se muestra en los bloques que traen la petición SOAP real (ver habilitarCopiarCurl); por
+        // eso arranca oculto en vez de agregarse condicionalmente, así expandir() lo puede copiar igual.
+        copiarCurl = new JButton("cURL", Icons.curl());
+        copiarCurl.setToolTipText("Copiar como comando cURL, para pegar en la terminal o importarlo en Postman");
+        Accesibilidad.nombrar(copiarCurl, "Copiar " + titulo + " como cURL");
+        copiarCurl.addActionListener(e -> {
+            if (generadorCurl != null) {
+                ClipboardUtil.copiar(generadorCurl.get());
+            }
+        });
+        copiarCurl.setVisible(false);
+
         JPanel izquierda = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         izquierda.add(new JLabel(titulo));
         izquierda.add(badge);
@@ -77,6 +91,7 @@ public class OutputBlock extends JPanel {
         norte.add(izquierda, BorderLayout.WEST);
 
         JPanel botones = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 0));
+        botones.add(copiarCurl);
         botones.add(copiar);
         if (expandible) {
             JButton expandir = new JButton(Icons.expandir());
@@ -107,6 +122,9 @@ public class OutputBlock extends JPanel {
         if (badge.isVisible()) {
             copia.setBadge(badge.getText(), badge.getBackground().equals(new Color(46, 125, 50)));
         }
+        if (generadorCurl != null) {
+            copia.habilitarCopiarCurl(generadorCurl);
+        }
         dialogo.setContentPane(copia);
         dialogo.setSize(1000, 700);
         dialogo.setLocationRelativeTo(padre);
@@ -131,6 +149,21 @@ public class OutputBlock extends JPanel {
         }
         // Monoespaciada, al mismo tamaño que el resto de la interfaz (así respeta el tamaño de fuente elegido).
         area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, UIManager.getFont("Label.font").getSize()));
+    }
+
+    /**
+     * Muestra el botón "cURL": {@code generador} arma el comando cada vez que se pulsa, con el texto que el
+     * bloque tenga en ese momento (normalmente {@code this::getTexto} combinado con la construcción del cURL).
+     * Solo tiene sentido en un bloque que muestre la petición SOAP tal cual se envía al WS.
+     */
+    public void habilitarCopiarCurl(java.util.function.Supplier<String> generador) {
+        this.generadorCurl = generador;
+        copiarCurl.setVisible(true);
+    }
+
+    /** El texto tal cual se cargó con {@link #setTexto}, sin el formato/indentado que se ve en pantalla. */
+    public String getTexto() {
+        return textoOriginal;
     }
 
     public void setTexto(String texto) {

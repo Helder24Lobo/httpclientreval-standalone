@@ -1,6 +1,7 @@
 package com.example.httpclientreval.ui;
 
 import com.example.httpclientreval.model.EnvioRegistrado;
+import com.example.httpclientreval.model.SoapHttpClient;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -40,6 +41,9 @@ final class HistorialDialog extends JDialog {
     private final JTable tabla = new JTable(modelo);
     private final JLabel titulo = new JLabel(" ");
     private final OutputBlock salidaPeticion = new OutputBlock("XML SOAP enviado");
+    {
+        salidaPeticion.habilitarCopiarCurl(() -> SoapHttpClient.curlPara(salidaPeticion.getTexto()));
+    }
     private final OutputBlock salidaRespuesta = new OutputBlock("Respuesta HTTP");
     private final OutputBlock salidaPlano = new OutputBlock("Respuesta en claro");
     private final JButton reenviar = new JButton("Reenviar", Icons.enviar());

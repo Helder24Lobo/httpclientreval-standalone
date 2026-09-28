@@ -5,6 +5,7 @@ import com.example.httpclientreval.model.Envelope;
 import com.example.httpclientreval.model.EnvioRegistrado;
 import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
+import com.example.httpclientreval.model.SoapHttpClient;
 import com.example.httpclientreval.model.SoapRequestBuilder;
 import com.formdev.flatlaf.FlatClientProperties;
 
@@ -20,6 +21,7 @@ import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -37,9 +39,14 @@ public class EncryptPanel extends JPanel {
 
     private final Map<String, JTextField> campos = new LinkedHashMap<>();
     private final StatusBanner statusBanner = new StatusBanner();
+    private final JLabel indicadorTamano = new JLabel(" ");
     private final OutputBlock salidaMensaje = new OutputBlock("_mensaje (Base64)");
     private final OutputBlock salidaSobre = new OutputBlock("Sobre JSON");
     private final OutputBlock salidaSoap = new OutputBlock("XML SOAP (Postman)");
+    {
+        // La app nace para reemplazar Postman: este bloque siempre trae exactamente lo que se envía al WS.
+        salidaSoap.habilitarCopiarCurl(() -> SoapHttpClient.curlPara(salidaSoap.getTexto()));
+    }
     private final OutputBlock salidaHttp = new OutputBlock("Respuesta HTTP");
     private final OutputBlock salidaResultCifrado = new OutputBlock("OBJRequestResult (cifrado)");
     private final OutputBlock salidaResultPlano = new OutputBlock("Respuesta en claro");
@@ -101,8 +108,19 @@ public class EncryptPanel extends JPanel {
         botones.add(guardar);
         botones.add(limpiar);
 
+        // Tamaño de la respuesta (bytes) junto al tiempo, para ver de un vistazo si el WS devolvió algo
+        // razonable sin tener que abrir la pestaña "Respuesta HTTP".
+        indicadorTamano.putClientProperty(FlatClientProperties.STYLE, "foreground: $Label.disabledForeground");
+        indicadorTamano.setVisible(false);
+        Accesibilidad.nombrar(indicadorTamano, "Tamaño de la respuesta");
+
+        JPanel estado = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        estado.setOpaque(false);
+        estado.add(statusBanner);
+        estado.add(indicadorTamano);
+
         JPanel accion = new JPanel(new BorderLayout(8, 0));
-        accion.add(statusBanner, BorderLayout.CENTER);
+        accion.add(estado, BorderLayout.CENTER);
         accion.add(botones, BorderLayout.EAST);
 
         JPanel centro = new JPanel(new BorderLayout(4, 4));
@@ -327,6 +345,7 @@ public class EncryptPanel extends JPanel {
         }
 
         statusBanner.ocultar();
+        indicadorTamano.setVisible(false);
         botonEnviar.setEnabled(false);
         salidaHttp.setTexto("");
         salidaHttp.ocultarBadge();
@@ -367,10 +386,13 @@ public class EncryptPanel extends JPanel {
     private void mostrarResultadoEnvio(EnvioRegistrado envio) {
         if (envio.statusCode == null) {
             salidaHttp.setBadge("Error", false);
+            indicadorTamano.setVisible(false);
             mostrarError("Error al enviar: " + envio.errorEnvio);
             return;
         }
 
+        indicadorTamano.setText(FormatoTamano.humano(FormatoTamano.bytesUtf8(envio.cuerpo)) + " · " + envio.tiempoMs + " ms");
+        indicadorTamano.setVisible(true);
         salidaHttp.setBadge(envio.statusCode + " · " + envio.tiempoMs + "ms", envio.exitoHttp());
         // El código HTTP ya va en el badge; así el cuerpo queda como XML/JSON puro y se puede formatear.
         salidaHttp.setTexto(envio.cuerpo);
@@ -463,5 +485,6 @@ public class EncryptPanel extends JPanel {
         salidaResultPlano.ocultarBadge();
         ultimoSoapGenerado = null;
         statusBanner.ocultar();
+        indicadorTamano.setVisible(false);
     }
 }

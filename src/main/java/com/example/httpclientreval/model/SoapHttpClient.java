@@ -59,4 +59,22 @@ public class SoapHttpClient {
 
         return new Respuesta(response.statusCode(), response.body(), tiempoMs);
     }
+
+    /**
+     * El mismo POST que hace {@link #enviar}, como comando cURL (sintaxis bash: comillas simples,
+     * pensado para pegar en una terminal o en Postman/Insomnia vía "importar cURL"). Se genera aquí,
+     * junto al código que arma la petición real, para que ambos no se desincronicen si cambian la
+     * URL, el SOAPAction o el Content-Type.
+     */
+    public static String curlPara(String soapXml) {
+        return "curl -X POST '" + URL + "' \\\n"
+                + "  -H 'Content-Type: " + CONTENT_TYPE + "' \\\n"
+                + "  -H 'SOAPAction: " + SOAP_ACTION + "' \\\n"
+                + "  --data-raw '" + escaparComillaSimple(soapXml == null ? "" : soapXml) + "'";
+    }
+
+    /** Escapado seguro para comillas simples en bash: cierra la comilla, escapa una comilla literal y la reabre. */
+    private static String escaparComillaSimple(String texto) {
+        return texto.replace("'", "'\\''");
+    }
 }

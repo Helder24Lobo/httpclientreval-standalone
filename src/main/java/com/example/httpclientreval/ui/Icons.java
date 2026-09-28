@@ -83,6 +83,10 @@ final class Icons {
         return icono("cancelar");
     }
 
+    static Icon curl() {
+        return icono("curl");
+    }
+
     static Icon favorito() {
         return icono("favorito");
     }

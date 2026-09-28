@@ -57,6 +57,8 @@ final class BuscadorPerfiles extends JDialog {
         this.alElegir = alElegir;
 
         lista.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        Accesibilidad.nombrar(lista, "Perfiles encontrados");
+        Accesibilidad.nombrar(campo, "Buscar perfil", "Escribe para filtrar; las flechas arriba y abajo cambian la selección y Enter elige");
         lista.setVisibleRowCount(10);
         lista.setCellRenderer(new DefaultListCellRenderer() {
             @Override

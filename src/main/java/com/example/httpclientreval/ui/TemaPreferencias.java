@@ -44,6 +44,7 @@ public final class TemaPreferencias {
 
     /** Instala el look and feel claro u oscuro; para refrescar ventanas abiertas usar {@link FlatLaf#updateUI()}. */
     public static void instalar(boolean oscuro) throws UnsupportedLookAndFeelException {
+        FuentePreferencias.aplicar();
         UIManager.setLookAndFeel(oscuro ? new FlatDarculaLaf() : new FlatLightLaf());
     }
 

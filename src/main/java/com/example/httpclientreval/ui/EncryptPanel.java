@@ -6,6 +6,7 @@ import com.example.httpclientreval.model.EnvioRegistrado;
 import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.model.SoapRequestBuilder;
+import com.formdev.flatlaf.FlatClientProperties;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -19,7 +20,6 @@ import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
@@ -65,6 +65,7 @@ public class EncryptPanel extends JPanel {
         headerDefaults = perfil.headerMensajeDefault != null ? perfil.headerMensajeDefault : new MensajeNegocio.HeaderMensaje();
 
         JTabbedPane tabsEntrada = new JTabbedPane();
+        Accesibilidad.nombrar(tabsEntrada, "Datos de la petición");
         tabsEntrada.addTab("Sobre (_header)", crearPanelSobre(perfil));
         tabsEntrada.addTab("Mensaje de negocio", crearPanelMensaje(bodyDefaults, headerDefaults));
         tabsEntrada.addTab("Referencias", crearPanelReferencias(bodyDefaults));
@@ -109,11 +110,13 @@ public class EncryptPanel extends JPanel {
         centro.add(accion, BorderLayout.SOUTH);
 
         JTabbedPane tabsPeticion = new JTabbedPane();
+        Accesibilidad.nombrar(tabsPeticion, "Petición generada");
         tabsPeticion.addTab("_mensaje", salidaMensaje);
         tabsPeticion.addTab("Sobre", salidaSobre);
         tabsPeticion.addTab("XML SOAP", salidaSoap);
 
         JTabbedPane tabsRespuesta = new JTabbedPane();
+        Accesibilidad.nombrar(tabsRespuesta, "Respuesta del servicio");
         tabsRespuesta.addTab("Respuesta HTTP", salidaHttp);
         tabsRespuesta.addTab("OBJRequestResult", salidaResultCifrado);
         tabsRespuesta.addTab("Respuesta en claro", salidaResultPlano);
@@ -129,7 +132,7 @@ public class EncryptPanel extends JPanel {
 
     private static JPanel conTitulo(String titulo, JTabbedPane tabs) {
         JLabel etiqueta = new JLabel(titulo);
-        etiqueta.setFont(etiqueta.getFont().deriveFont(Font.BOLD));
+        etiqueta.putClientProperty(FlatClientProperties.STYLE, "font: bold");
 
         JPanel panel = new JPanel(new BorderLayout(0, 2));
         panel.add(etiqueta, BorderLayout.NORTH);

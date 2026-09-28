@@ -14,7 +14,6 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.io.IOException;
@@ -62,6 +61,7 @@ public class NewProfilePanel extends JPanel {
         MensajeNegocio.HeaderMensaje headerDefaults = new MensajeNegocio.HeaderMensaje();
 
         JTabbedPane tabs = new JTabbedPane();
+        Accesibilidad.nombrar(tabs, "Datos de la nueva transacción");
         tabs.addTab("Datos generales", crearPanelGeneral());
         tabs.addTab("Mensaje de negocio", crearPanelMensaje(bodyDefaults, headerDefaults));
         tabs.addTab("Referencias", crearPanelReferencias(bodyDefaults));
@@ -86,11 +86,11 @@ public class NewProfilePanel extends JPanel {
         accion.add(botones, BorderLayout.EAST);
 
         JLabel titulo = new JLabel("Nueva transacción");
-        titulo.setFont(titulo.getFont().deriveFont(Font.BOLD, 14f));
+        titulo.putClientProperty(FlatClientProperties.STYLE, "font: bold +2");
 
         JButton cancelar = new JButton(Icons.cancelar());
         cancelar.setToolTipText("Cancelar y volver a la pantalla principal");
-        cancelar.setFocusable(false);
+        Accesibilidad.nombrar(cancelar, "Cancelar nueva transacción");
         cancelar.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
         cancelar.addActionListener(e -> alCancelar.run());
 

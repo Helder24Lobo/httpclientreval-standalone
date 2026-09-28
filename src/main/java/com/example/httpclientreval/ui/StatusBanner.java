@@ -1,12 +1,13 @@
 package com.example.httpclientreval.ui;
 
+import com.formdev.flatlaf.FlatClientProperties;
+
 import javax.swing.BorderFactory;
 import javax.swing.Icon;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import java.awt.Color;
 import java.awt.FlowLayout;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -24,16 +25,19 @@ public class StatusBanner extends JPanel {
 
     /** Cada tipo tiene su color e icono, para distinguirlos de un vistazo sin leer el texto. */
     public enum Tipo {
-        EXITO(new Color(46, 125, 50), Icons::check),                  // Verde
-        ERROR(new Color(198, 40, 40), Icons::alerta),                 // Rojo: error genérico
-        ERROR_NEGOCIO(new Color(183, 80, 0), Icons::errorNegocio),    // Naranja: el servicio rechazó la operación
-        ERROR_HTTP(new Color(136, 14, 79), Icons::errorHttp),         // Granate: falla a nivel de HTTP
-        INFO(new Color(21, 101, 192), Icons::info);                   // Azul
+        EXITO("Éxito", new Color(46, 125, 50), Icons::check),                  // Verde
+        ERROR("Error", new Color(198, 40, 40), Icons::alerta),                 // Rojo: error genérico
+        ERROR_NEGOCIO("Error de negocio", new Color(183, 80, 0), Icons::errorNegocio), // Naranja: el servicio rechazó la operación
+        ERROR_HTTP("Error HTTP", new Color(136, 14, 79), Icons::errorHttp),    // Granate: falla a nivel de HTTP
+        INFO("Información", new Color(21, 101, 192), Icons::info);             // Azul
 
+        /** Lo que lee un lector de pantalla en lugar del icono y el color, que por sí solos no se perciben. */
+        final String etiqueta;
         final Color colorFondo;
         final Supplier<Icon> icono;
 
-        Tipo(Color colorFondo, Supplier<Icon> icono) {
+        Tipo(String etiqueta, Color colorFondo, Supplier<Icon> icono) {
+            this.etiqueta = etiqueta;
             this.colorFondo = colorFondo;
             this.icono = icono;
         }
@@ -45,9 +49,10 @@ public class StatusBanner extends JPanel {
         super(new FlowLayout(FlowLayout.LEFT, 8, 4));
         setOpaque(false);
         setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        Accesibilidad.nombrar(this, "Estado");
 
         textoLabel.setForeground(Color.WHITE);
-        textoLabel.setFont(textoLabel.getFont().deriveFont(Font.BOLD, 12f));
+        textoLabel.putClientProperty(FlatClientProperties.STYLE, "font: bold");
 
         add(iconoLabel);
         add(textoLabel);
@@ -98,11 +103,15 @@ public class StatusBanner extends JPanel {
         this.tipoActual = tipo;
         iconoLabel.setIcon(tipo.icono.get());
         textoLabel.setText(mensaje);
+        // El tipo va en el nombre del banner: el cambio de nombre se notifica a los lectores de pantalla.
+        Accesibilidad.nombrar(iconoLabel, tipo.etiqueta);
+        Accesibilidad.nombrar(this, tipo.etiqueta + ": " + mensaje);
         setVisible(true);
         notificarCambio();
     }
 
     public void ocultar() {
+        Accesibilidad.nombrar(this, "Estado");
         textoLabel.setText("");
         setVisible(false);
         notificarCambio();

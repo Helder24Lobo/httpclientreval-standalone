@@ -7,7 +7,7 @@ import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
 
-/** Atajos de teclado de la app: Ctrl (Cmd en macOS) + Enter / K / L / G / D / H. */
+/** Atajos de teclado de la app: Ctrl (Cmd en macOS) + Enter / K / L / G / D / H, y +, - y 0 para el tamaño de fuente. */
 final class Atajos {
 
     static final KeyStroke ENVIAR = KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, mascara());
@@ -16,6 +16,12 @@ final class Atajos {
     static final KeyStroke GENERAR = KeyStroke.getKeyStroke(KeyEvent.VK_G, mascara());
     static final KeyStroke FAVORITO = KeyStroke.getKeyStroke(KeyEvent.VK_D, mascara());
     static final KeyStroke HISTORIAL = KeyStroke.getKeyStroke(KeyEvent.VK_H, mascara());
+    static final KeyStroke AUMENTAR_FUENTE = KeyStroke.getKeyStroke(KeyEvent.VK_EQUALS, mascara());
+    static final KeyStroke AUMENTAR_FUENTE_MAS = KeyStroke.getKeyStroke(KeyEvent.VK_PLUS, mascara());
+    static final KeyStroke AUMENTAR_FUENTE_NUM = KeyStroke.getKeyStroke(KeyEvent.VK_ADD, mascara());
+    static final KeyStroke REDUCIR_FUENTE = KeyStroke.getKeyStroke(KeyEvent.VK_MINUS, mascara());
+    static final KeyStroke REDUCIR_FUENTE_NUM = KeyStroke.getKeyStroke(KeyEvent.VK_SUBTRACT, mascara());
+    static final KeyStroke RESTABLECER_FUENTE = KeyStroke.getKeyStroke(KeyEvent.VK_0, mascara());
 
     private Atajos() {
     }

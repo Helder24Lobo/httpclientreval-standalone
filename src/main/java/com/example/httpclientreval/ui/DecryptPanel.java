@@ -32,8 +32,13 @@ public class DecryptPanel extends JPanel {
         entrada.setLineWrap(true);
         entrada.setWrapStyleWord(true);
 
+        // Es un campo de pegado: Tab debe pasar al siguiente control, no insertar tabulaciones.
+        JLabel indicacion = new JLabel("Pega el _mensaje en base64, o el sobre JSON completo:");
+        Accesibilidad.etiquetar(indicacion, entrada, "Mensaje cifrado o sobre JSON");
+        Accesibilidad.tabulacionLibre(entrada);
+
         JPanel norte = new JPanel(new BorderLayout(4, 4));
-        norte.add(new JLabel("Pega el _mensaje en base64, o el sobre JSON completo:"), BorderLayout.NORTH);
+        norte.add(indicacion, BorderLayout.NORTH);
         norte.add(new JScrollPane(entrada), BorderLayout.CENTER);
 
         JButton descifrar = new JButton("Descifrar", Icons.descifrar());

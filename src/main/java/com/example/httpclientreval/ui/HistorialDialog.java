@@ -50,6 +50,7 @@ final class HistorialDialog extends JDialog {
         setDefaultCloseOperation(HIDE_ON_CLOSE);
 
         tabla.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        Accesibilidad.nombrar(tabla, "Historial de envíos", "Una fila por envío; Reenviar vuelve a mandar la petición seleccionada");
         tabla.setRowHeight(tabla.getRowHeight() + 4);
         tabla.setFillsViewportHeight(true);
         tabla.getColumnModel().getColumn(0).setPreferredWidth(70);
@@ -69,6 +70,7 @@ final class HistorialDialog extends JDialog {
         vaciar.addActionListener(e -> historial.vaciar());
 
         JTabbedPane detalle = new JTabbedPane();
+        Accesibilidad.nombrar(detalle, "Detalle del envío seleccionado");
         detalle.addTab("Petición", salidaPeticion);
         detalle.addTab("Respuesta HTTP", salidaRespuesta);
         detalle.addTab("Respuesta en claro", salidaPlano);

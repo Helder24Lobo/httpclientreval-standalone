@@ -13,7 +13,6 @@ import javax.swing.border.Border;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.Insets;
 import java.util.Map;
@@ -39,7 +38,7 @@ final class FormFields {
         gbc.gridy = fila[0]++;
         gbc.gridwidth = 2;
         JLabel etiqueta = new JLabel(titulo);
-        etiqueta.setFont(etiqueta.getFont().deriveFont(Font.BOLD));
+        etiqueta.putClientProperty(FlatClientProperties.STYLE, "font: bold");
         panel.add(etiqueta, gbc);
         gbc.gridwidth = 1;
     }
@@ -49,9 +48,11 @@ final class FormFields {
         gbc.gridx = 0;
         gbc.gridy = fila[0]++;
         gbc.weightx = 0;
-        panel.add(new JLabel(etiqueta + ":"), gbc);
+        JLabel rotulo = new JLabel(etiqueta + ":");
+        panel.add(rotulo, gbc);
 
         JTextField campo = new JTextField(valorPorDefecto == null ? "" : valorPorDefecto, 22);
+        Accesibilidad.etiquetar(rotulo, campo, etiqueta);
         campos.put(etiqueta, campo);
         gbc.gridx = 1;
         gbc.weightx = 1;
@@ -68,14 +69,18 @@ final class FormFields {
         gbc.gridx = 0;
         gbc.gridy = fila[0]++;
         gbc.weightx = 0;
-        panel.add(new JLabel(etiqueta + ":"), gbc);
+        JLabel rotulo = new JLabel(etiqueta + ":");
+        panel.add(rotulo, gbc);
 
         JPasswordField campo = new JPasswordField(valorPorDefecto == null ? "" : valorPorDefecto, 22);
+        Accesibilidad.etiquetar(rotulo, campo, etiqueta);
         char ecoOculto = campo.getEchoChar();
 
+        // Icono sin texto: el nombre accesible y el tooltip son lo único que lo describe. Se deja enfocable
+        // (Tab lo alcanza y Espacio lo activa) para que también se pueda usar sin mouse.
         JToggleButton ver = new JToggleButton(Icons.ojo());
         ver.setToolTipText("Mostrar");
-        ver.setFocusable(false);
+        Accesibilidad.nombrar(ver, "Mostrar " + etiqueta);
         ver.putClientProperty(FlatClientProperties.BUTTON_TYPE, FlatClientProperties.BUTTON_TYPE_TOOLBAR_BUTTON);
         ver.addActionListener(e -> {
             boolean mostrar = ver.isSelected();
@@ -84,6 +89,7 @@ final class FormFields {
             campo.putClientProperty("JPasswordField.cutCopyAllowed", mostrar);
             ver.setIcon(mostrar ? Icons.ojoTachado() : Icons.ojo());
             ver.setToolTipText(mostrar ? "Ocultar" : "Mostrar");
+            Accesibilidad.nombrar(ver, (mostrar ? "Ocultar " : "Mostrar ") + etiqueta);
         });
 
         // El ojo va dentro del recuadro para que todos los campos midan lo mismo.

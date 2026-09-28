@@ -1,6 +1,7 @@
 package com.example.httpclientreval.ui;
 
 import com.formdev.flatlaf.FlatLaf;
+import com.formdev.flatlaf.FlatClientProperties;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 import org.fife.ui.rsyntaxtextarea.SyntaxConstants;
 import org.fife.ui.rsyntaxtextarea.Theme;
@@ -12,6 +13,7 @@ import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
+import javax.swing.UIManager;
 import javax.swing.SwingUtilities;
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -32,7 +34,6 @@ public class OutputBlock extends JPanel {
 
     private static final String TEMA_OSCURO = "/org/fife/ui/rsyntaxtextarea/themes/dark.xml";
     private static final String TEMA_CLARO = "/org/fife/ui/rsyntaxtextarea/themes/idea.xml";
-    private static final Font FUENTE = new Font(Font.MONOSPACED, Font.PLAIN, 12);
 
     private final RSyntaxTextArea area = new RSyntaxTextArea();
     private final JLabel badge = new JLabel(" ");
@@ -54,15 +55,19 @@ public class OutputBlock extends JPanel {
         area.setWrapStyleWord(true);
         area.setHighlightCurrentLine(false);
         area.setCodeFoldingEnabled(true);
+        Accesibilidad.nombrar(area, titulo, "Texto de solo lectura");
+        Accesibilidad.tabulacionLibre(area);
         aplicarTema();
 
         badge.setOpaque(true);
         badge.setBorder(BorderFactory.createEmptyBorder(1, 8, 1, 8));
-        badge.setFont(badge.getFont().deriveFont(Font.BOLD, 11f));
+        badge.putClientProperty(FlatClientProperties.STYLE, "font: bold -1");
         badge.setVisible(false);
 
         JButton copiar = new JButton("Copiar", Icons.copiar());
         copiar.addActionListener(e -> ClipboardUtil.copiar(textoOriginal));
+        // Hay varios "Copiar" en pantalla: el nombre accesible dice de cuál bloque es cada uno.
+        Accesibilidad.nombrar(copiar, "Copiar " + titulo);
 
         JPanel izquierda = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         izquierda.add(new JLabel(titulo));
@@ -76,6 +81,7 @@ public class OutputBlock extends JPanel {
         if (expandible) {
             JButton expandir = new JButton(Icons.expandir());
             expandir.setToolTipText("Expandir");
+            Accesibilidad.nombrar(expandir, "Expandir " + titulo);
             expandir.addActionListener(e -> expandir());
             botones.add(expandir);
         }
@@ -123,7 +129,8 @@ public class OutputBlock extends JPanel {
         } catch (IOException | RuntimeException ex) {
             // Sin tema se usan los colores por defecto del editor; no es motivo para fallar.
         }
-        area.setFont(FUENTE);
+        // Monoespaciada, al mismo tamaño que el resto de la interfaz (así respeta el tamaño de fuente elegido).
+        area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, UIManager.getFont("Label.font").getSize()));
     }
 
     public void setTexto(String texto) {

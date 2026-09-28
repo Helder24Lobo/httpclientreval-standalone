@@ -13,11 +13,14 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.KeyStroke;
 import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -129,17 +132,34 @@ public class AppWindow extends JFrame {
         JButton configuracion = new JButton("Configuración", Icons.configuracion());
         configuracion.addActionListener(e -> abrirConfiguracion());
 
+        // Tamaño de fuente con el teclado (como el zoom del navegador): Ctrl + / Ctrl - / Ctrl 0.
+        for (KeyStroke mas : new KeyStroke[]{Atajos.AUMENTAR_FUENTE, Atajos.AUMENTAR_FUENTE_MAS, Atajos.AUMENTAR_FUENTE_NUM}) {
+            Atajos.registrar(getRootPane(), mas, () -> cambiarTamanoFuente(FuentePreferencias.desplazar(FuentePreferencias.obtener(), 1)));
+        }
+        for (KeyStroke menos : new KeyStroke[]{Atajos.REDUCIR_FUENTE, Atajos.REDUCIR_FUENTE_NUM}) {
+            Atajos.registrar(getRootPane(), menos, () -> cambiarTamanoFuente(FuentePreferencias.desplazar(FuentePreferencias.obtener(), -1)));
+        }
+        Atajos.registrar(getRootPane(), Atajos.RESTABLECER_FUENTE, () -> cambiarTamanoFuente(FuentePreferencias.POR_DEFECTO));
+
+        // Cada combo con su etiqueta asociada: el lector de pantalla anuncia "Grupo", "Transacción" o "Modo" al enfocarlos.
+        JLabel etiquetaGrupo = new JLabel("Grupo:");
+        Accesibilidad.etiquetar(etiquetaGrupo, comboGrupo, "Grupo");
+        JLabel etiquetaTransaccion = new JLabel("Transacción:");
+        Accesibilidad.etiquetar(etiquetaTransaccion, comboPerfil, "Transacción");
+        JLabel etiquetaModo = new JLabel("Modo:");
+        Accesibilidad.etiquetar(etiquetaModo, comboModo, "Modo");
+
         JPanel filaTransaccion = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        filaTransaccion.add(new JLabel("Grupo:"));
+        filaTransaccion.add(etiquetaGrupo);
         filaTransaccion.add(comboGrupo);
-        filaTransaccion.add(new JLabel("Transacción:"));
+        filaTransaccion.add(etiquetaTransaccion);
         filaTransaccion.add(comboPerfil);
         filaTransaccion.add(botonFavorito);
         filaTransaccion.add(renombrarPerfil);
         filaTransaccion.add(eliminarPerfil);
 
         JPanel filaAcciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        filaAcciones.add(new JLabel("Modo:"));
+        filaAcciones.add(etiquetaModo);
         filaAcciones.add(comboModo);
         filaAcciones.add(nuevaTransaccion);
         filaAcciones.add(buscarPerfil);
@@ -295,8 +315,10 @@ public class AppWindow extends JFrame {
         boolean favorito = actual != null && preferencias.esFavorito(actual.nombre);
         botonFavorito.setEnabled(actual != null);
         botonFavorito.setIcon(favorito ? Icons.favorito() : Icons.favoritoVacio());
-        botonFavorito.setToolTipText((favorito ? "Quitar de favoritos" : "Marcar como favorito")
-                + " (" + Atajos.texto(Atajos.FAVORITO) + ")");
+        String accion = favorito ? "Quitar de favoritos" : "Marcar como favorito";
+        botonFavorito.setToolTipText(accion + " (" + Atajos.texto(Atajos.FAVORITO) + ")");
+        // Botón solo con icono (estrella llena o vacía): el nombre accesible dice qué hace y en qué estado está.
+        Accesibilidad.nombrar(botonFavorito, actual != null ? accion + ": " + actual.nombre : accion);
     }
 
     private void refrescar() {
@@ -442,9 +464,31 @@ public class AppWindow extends JFrame {
                 TemaPreferencias.SISTEMA, TemaPreferencias.OSCURO, TemaPreferencias.CLARO});
         comboTema.setSelectedItem(TemaPreferencias.obtenerTema());
 
-        JPanel panel = new JPanel(new BorderLayout(8, 8));
-        panel.add(new JLabel("Tema:"), BorderLayout.WEST);
-        panel.add(comboTema, BorderLayout.CENTER);
+        JComboBox<String> comboFuente = new JComboBox<>();
+        for (int porcentaje : FuentePreferencias.PORCENTAJES) {
+            comboFuente.addItem(porcentaje + " %");
+        }
+        comboFuente.setSelectedItem(FuentePreferencias.obtener() + " %");
+
+        JLabel etiquetaTema = new JLabel("Tema:");
+        Accesibilidad.etiquetar(etiquetaTema, comboTema, "Tema");
+        JLabel etiquetaFuente = new JLabel("Tamaño de fuente:");
+        Accesibilidad.etiquetar(etiquetaFuente, comboFuente, "Tamaño de fuente");
+        comboFuente.setToolTipText("También con " + Atajos.texto(Atajos.AUMENTAR_FUENTE) + " / "
+                + Atajos.texto(Atajos.REDUCIR_FUENTE) + " y " + Atajos.texto(Atajos.RESTABLECER_FUENTE) + " para restablecer");
+
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = FormFields.gbc();
+        gbc.gridy = 0;
+        gbc.gridx = 0;
+        panel.add(etiquetaTema, gbc);
+        gbc.gridx = 1;
+        panel.add(comboTema, gbc);
+        gbc.gridy = 1;
+        gbc.gridx = 0;
+        panel.add(etiquetaFuente, gbc);
+        gbc.gridx = 1;
+        panel.add(comboFuente, gbc);
 
         int resultado = JOptionPane.showConfirmDialog(this, panel, "Configuración",
                 JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
@@ -455,7 +499,23 @@ public class AppWindow extends JFrame {
 
         String nuevoTema = (String) comboTema.getSelectedItem();
         TemaPreferencias.guardarTema(nuevoTema);
-        aplicarTema(TemaPreferencias.esOscuro(nuevoTema));
+        int nuevaFuente = FuentePreferencias.PORCENTAJES[comboFuente.getSelectedIndex()];
+        if (nuevaFuente != FuentePreferencias.obtener()) {
+            // Cambia el tema y la fuente en una sola pasada (una sola reinstalación del look and feel).
+            FuentePreferencias.guardar(nuevaFuente);
+            reinstalarTema(TemaPreferencias.esOscuro(nuevoTema));
+        } else {
+            aplicarTema(TemaPreferencias.esOscuro(nuevoTema));
+        }
+    }
+
+    /** Cambia el tamaño de fuente de toda la interfaz (se recuerda para la próxima vez). */
+    private void cambiarTamanoFuente(int porcentaje) {
+        if (porcentaje == FuentePreferencias.obtener()) {
+            return;
+        }
+        FuentePreferencias.guardar(porcentaje);
+        reinstalarTema(FlatLaf.isLafDark());
     }
 
     /** Si el tema es "Seguir el sistema", consulta el SO (fuera del EDT) y cambia el tema si no coincide. */
@@ -487,12 +547,29 @@ public class AppWindow extends JFrame {
         if (oscuro == FlatLaf.isLafDark()) {
             return;
         }
+        reinstalarTema(oscuro);
+    }
+
+    /** Reinstala el look and feel (con el tema y el tamaño de fuente guardados) y refresca todas las ventanas abiertas. */
+    private void reinstalarTema(boolean oscuro) {
         try {
             TemaPreferencias.instalar(oscuro);
-            // Refresca todas las ventanas abiertas sin pack(), para respetar el tamaño elegido por el usuario.
             FlatLaf.updateUI();
+            ajustarTamanoVentana();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "No se pudo aplicar el tema: " + ex.getMessage());
         }
+    }
+
+    /**
+     * Con letra más grande los controles de arriba pueden necesitar más espacio. Se agranda la ventana solo si hace
+     * falta (nunca se encoge) para no deshacer el tamaño que eligió el usuario, como haría pack().
+     */
+    private void ajustarTamanoVentana() {
+        if ((getExtendedState() & JFrame.MAXIMIZED_BOTH) == JFrame.MAXIMIZED_BOTH) {
+            return;
+        }
+        Dimension preferido = getPreferredSize();
+        setSize(Math.max(getWidth(), preferido.width), Math.max(getHeight(), preferido.height));
     }
 }

@@ -1,6 +1,7 @@
 package com.example.httpclientreval.ui;
 
 import com.example.httpclientreval.model.Profile;
+import com.example.httpclientreval.model.SoapHttpClient;
 import com.formdev.flatlaf.FlatLaf;
 
 import javax.swing.BoxLayout;
@@ -13,7 +14,10 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JSpinner;
+import javax.swing.JTextField;
 import javax.swing.KeyStroke;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -527,24 +531,78 @@ public class AppWindow extends JFrame {
         comboFuente.setToolTipText("También con " + Atajos.texto(Atajos.AUMENTAR_FUENTE) + " / "
                 + Atajos.texto(Atajos.REDUCIR_FUENTE) + " y " + Atajos.texto(Atajos.RESTABLECER_FUENTE) + " para restablecer");
 
+        // Entorno del servicio: URL, SOAPAction y timeout, para poder apuntar a producción u otro
+        // ambiente (o ajustar el tiempo de espera) sin recompilar la app.
+        JTextField campoUrl = new JTextField(SoapHttpClient.getUrl(), 28);
+        JTextField campoSoapAction = new JTextField(SoapHttpClient.getSoapAction(), 28);
+        JSpinner campoTimeout = new JSpinner(new SpinnerNumberModel(SoapHttpClient.getTimeoutSegundos(),
+                SoapHttpClient.TIMEOUT_MINIMO_SEGUNDOS, SoapHttpClient.TIMEOUT_MAXIMO_SEGUNDOS, 5));
+
+        JLabel etiquetaUrl = new JLabel("URL del servicio:");
+        Accesibilidad.etiquetar(etiquetaUrl, campoUrl, "URL del servicio");
+        JLabel etiquetaSoapAction = new JLabel("SOAPAction:");
+        Accesibilidad.etiquetar(etiquetaSoapAction, campoSoapAction, "SOAPAction");
+        JLabel etiquetaTimeout = new JLabel("Timeout (segundos):");
+        Accesibilidad.etiquetar(etiquetaTimeout, campoTimeout, "Timeout en segundos");
+
+        JButton restablecerEntorno = new JButton("Restablecer al ambiente de pruebas");
+        restablecerEntorno.addActionListener(e -> {
+            campoUrl.setText(SoapHttpClient.URL_POR_DEFECTO);
+            campoSoapAction.setText(SoapHttpClient.SOAP_ACTION_POR_DEFECTO);
+            campoTimeout.setValue(SoapHttpClient.TIMEOUT_POR_DEFECTO_SEGUNDOS);
+        });
+
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = FormFields.gbc();
-        gbc.gridy = 0;
+        int[] fila = {0};
+        gbc.gridy = fila[0]++;
         gbc.gridx = 0;
         panel.add(etiquetaTema, gbc);
         gbc.gridx = 1;
         panel.add(comboTema, gbc);
-        gbc.gridy = 1;
+        gbc.gridy = fila[0]++;
         gbc.gridx = 0;
         panel.add(etiquetaFuente, gbc);
         gbc.gridx = 1;
         panel.add(comboFuente, gbc);
 
-        int resultado = JOptionPane.showConfirmDialog(this, panel, "Configuración",
-                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        FormFields.agregarSeccion(panel, gbc, fila, "Entorno del servicio");
+        gbc.gridy = fila[0]++;
+        gbc.gridx = 0;
+        panel.add(etiquetaUrl, gbc);
+        gbc.gridx = 1;
+        panel.add(campoUrl, gbc);
+        gbc.gridy = fila[0]++;
+        gbc.gridx = 0;
+        panel.add(etiquetaSoapAction, gbc);
+        gbc.gridx = 1;
+        panel.add(campoSoapAction, gbc);
+        gbc.gridy = fila[0]++;
+        gbc.gridx = 0;
+        panel.add(etiquetaTimeout, gbc);
+        gbc.gridx = 1;
+        panel.add(campoTimeout, gbc);
+        gbc.gridy = fila[0]++;
+        gbc.gridx = 1;
+        panel.add(restablecerEntorno, gbc);
 
-        if (resultado != JOptionPane.OK_OPTION) {
-            return;
+        // En bucle: si la URL no es válida se avisa y se vuelve a mostrar el mismo panel (con lo que
+        // ya se había escrito) en vez de cerrar la ventana como si se hubiera guardado.
+        while (true) {
+            int resultado = JOptionPane.showConfirmDialog(this, panel, "Configuración",
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+            if (resultado != JOptionPane.OK_OPTION) {
+                return;
+            }
+            try {
+                SoapHttpClient.setUrl(campoUrl.getText());
+                SoapHttpClient.setSoapAction(campoSoapAction.getText());
+                SoapHttpClient.setTimeoutSegundos((Integer) campoTimeout.getValue());
+                break;
+            } catch (IllegalArgumentException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Entorno del servicio",
+                        JOptionPane.WARNING_MESSAGE);
+            }
         }
 
         String nuevoTema = (String) comboTema.getSelectedItem();

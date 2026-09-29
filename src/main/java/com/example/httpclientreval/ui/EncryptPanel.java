@@ -28,6 +28,7 @@ import java.awt.GridLayout;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Panel de ENCRYPT: formulario en pestañas (Sobre / Mensaje de negocio /
@@ -353,8 +354,12 @@ public class EncryptPanel extends JPanel {
         salidaResultPlano.setTexto("");
         salidaResultPlano.ocultarBadge();
 
+        // EnviandoDialog necesita poder cancelar el worker y el worker necesita poder cerrar el diálogo:
+        // se resuelve la referencia circular con esta casilla, llenada justo después de crear el worker.
+        AtomicReference<SwingWorker<EnvioRegistrado, Void>> workerActual = new AtomicReference<>();
         EnviandoDialog dialogo = new EnviandoDialog(SwingUtilities.getWindowAncestor(this),
-                "Enviando la petición al webservice...");
+                "Enviando la petición al webservice...",
+                () -> { if (workerActual.get() != null) workerActual.get().cancel(true); });
 
         String soap = ultimoSoapGenerado;
         SwingWorker<EnvioRegistrado, Void> worker = new SwingWorker<>() {
@@ -367,6 +372,12 @@ public class EncryptPanel extends JPanel {
             protected void done() {
                 dialogo.dispose();
                 botonEnviar.setEnabled(true);
+                if (isCancelled()) {
+                    // get() lanzaría CancellationException aunque EnvioRegistrado.enviar ya haya
+                    // atrapado la interrupción y devuelto algo: SwingWorker descarta ese resultado.
+                    statusBanner.mostrarInfo("Envío cancelado.");
+                    return;
+                }
                 try {
                     EnvioRegistrado envio = get();
                     HistorialEnvios.instancia().agregar(envio);
@@ -378,6 +389,7 @@ public class EncryptPanel extends JPanel {
                 }
             }
         };
+        workerActual.set(worker);
         worker.execute();
         dialogo.setVisible(true); // bloquea aquí (modal) hasta que done() llame dialogo.dispose()
     }

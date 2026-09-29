@@ -30,6 +30,7 @@ import java.awt.FlowLayout;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Ventana (no modal) con los envíos al WS de la sesión: lista arriba y, al
@@ -302,7 +303,9 @@ final class HistorialDialog extends JDialog {
             return;
         }
 
-        EnviandoDialog espera = new EnviandoDialog(this, "Reenviando la petición al webservice...");
+        AtomicReference<SwingWorker<EnvioRegistrado, Void>> workerActual = new AtomicReference<>();
+        EnviandoDialog espera = new EnviandoDialog(this, "Reenviando la petición al webservice...",
+                () -> { if (workerActual.get() != null) workerActual.get().cancel(true); });
         SwingWorker<EnvioRegistrado, Void> worker = new SwingWorker<>() {
             @Override
             protected EnvioRegistrado doInBackground() {
@@ -312,6 +315,9 @@ final class HistorialDialog extends JDialog {
             @Override
             protected void done() {
                 espera.dispose();
+                if (isCancelled()) {
+                    return;
+                }
                 try {
                     EnvioRegistrado nuevo = get();
                     historial.agregar(nuevo);
@@ -325,6 +331,7 @@ final class HistorialDialog extends JDialog {
                 }
             }
         };
+        workerActual.set(worker);
         worker.execute();
         espera.setVisible(true); // modal: bloquea hasta que done() llame espera.dispose()
     }

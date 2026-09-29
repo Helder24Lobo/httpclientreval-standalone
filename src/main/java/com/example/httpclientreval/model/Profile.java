@@ -95,6 +95,16 @@ public class Profile {
         return i > 0 ? n.substring(i + SEPARADOR_GRUPO.length()).trim() : n;
     }
 
+    /**
+     * Copia independiente de este perfil (incluidos bodyMensajeDefault/headerMensajeDefault: no comparten
+     * referencia con el original, así que editar uno no afecta al otro). Va por Gson en vez de copiar
+     * campo a campo para no tener que tocar este método si el perfil gana un campo nuevo.
+     */
+    public Profile copia() {
+        Gson gson = new Gson();
+        return gson.fromJson(gson.toJson(this), Profile.class);
+    }
+
     @Override
     public String toString() {
         return nombre;

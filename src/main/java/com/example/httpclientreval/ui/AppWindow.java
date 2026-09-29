@@ -113,6 +113,10 @@ public class AppWindow extends JFrame {
         botonFavorito.addActionListener(e -> alternarFavorito());
         Atajos.registrar(getRootPane(), Atajos.FAVORITO, this::alternarFavorito);
 
+        JButton duplicarPerfil = new JButton("Duplicar", Icons.duplicar());
+        duplicarPerfil.setToolTipText("Crea una copia del perfil seleccionado, lista para editar o renombrar");
+        duplicarPerfil.addActionListener(e -> duplicarPerfilSeleccionado());
+
         JButton renombrarPerfil = new JButton("Renombrar", Icons.editar());
         renombrarPerfil.addActionListener(e -> renombrarPerfilSeleccionado());
 
@@ -155,6 +159,7 @@ public class AppWindow extends JFrame {
         filaTransaccion.add(etiquetaTransaccion);
         filaTransaccion.add(comboPerfil);
         filaTransaccion.add(botonFavorito);
+        filaTransaccion.add(duplicarPerfil);
         filaTransaccion.add(renombrarPerfil);
         filaTransaccion.add(eliminarPerfil);
 
@@ -382,12 +387,10 @@ public class AppWindow extends JFrame {
         if (nuevoNombre.equals(seleccionado.nombre)) {
             return;
         }
-        for (Profile otro : perfiles) {
-            if (otro != seleccionado && otro.nombre.equalsIgnoreCase(nuevoNombre)) {
-                JOptionPane.showMessageDialog(this, "Ya existe un perfil con ese nombre.",
-                        "Renombrar perfil", JOptionPane.WARNING_MESSAGE);
-                return;
-            }
+        if (existeNombre(seleccionado, nuevoNombre)) {
+            JOptionPane.showMessageDialog(this, "Ya existe un perfil con ese nombre.",
+                    "Renombrar perfil", JOptionPane.WARNING_MESSAGE);
+            return;
         }
 
         String nombreAnterior = seleccionado.nombre;
@@ -405,6 +408,53 @@ public class AppWindow extends JFrame {
                     "No se pudo actualizar profiles.json: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    /** true si algún OTRO perfil (no {@code excepto}) ya tiene ese nombre, sin distinguir mayúsculas. */
+    private boolean existeNombre(Profile excepto, String nombre) {
+        for (Profile otro : perfiles) {
+            if (otro != excepto && otro.nombre.equalsIgnoreCase(nombre)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Crea una copia exacta del perfil seleccionado (llave AES, credenciales del WS y todos los
+     * defaults) con un nombre disponible ("... (copia)", "... (copia 2)"...) y queda seleccionada,
+     * lista para renombrar o editar sin haber tenido que llenar el formulario de "Nueva transacción" a mano.
+     */
+    private void duplicarPerfilSeleccionado() {
+        Profile original = (Profile) comboPerfil.getSelectedItem();
+        if (original == null) {
+            return;
+        }
+
+        Profile copia = original.copia();
+        copia.nombre = nombreDuplicadoDisponible(original.nombre);
+
+        int posicion = perfiles.indexOf(original);
+        perfiles.add(posicion + 1, copia);
+        try {
+            Profile.saveAll(archivoPerfiles, perfiles);
+            mostrandoNuevaTransaccion = false;
+            cargarGrupos(copia.grupo(), copia);
+            refrescar();
+        } catch (IOException ex) {
+            perfiles.remove(copia);
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo actualizar profiles.json: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private String nombreDuplicadoDisponible(String nombreOriginal) {
+        String candidato = nombreOriginal + " (copia)";
+        for (int n = 2; existeNombre(null, candidato); n++) {
+            candidato = nombreOriginal + " (copia " + n + ")";
+        }
+        return candidato;
     }
 
     private void eliminarPerfilSeleccionado() {

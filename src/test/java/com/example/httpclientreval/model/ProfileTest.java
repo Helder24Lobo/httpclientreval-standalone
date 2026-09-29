@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 class ProfileTest {
@@ -124,5 +125,45 @@ class ProfileTest {
         assertEquals("prueba", releido.bodyMensajeDefault.referencia1);
         assertEquals("CAJ001", releido.headerMensajeDefault.noIdentificacionCajero);
         assertEquals("usuario", releido.wsseUsername);
+    }
+
+    @Test
+    void copia_traeLosMismosValoresQueElOriginal() {
+        Profile original = new Profile();
+        original.nombre = "Recaudos - Comcel";
+        original.llaveAes = "12345678901234567890123456789012";
+        original.idClienteDefault = 26;
+        original.idTransaccionDefault = 9;
+        original.ipClienteDefault = "172.17.0.4";
+        original.wsseUsername = "usuario";
+        original.wssePassword = "clave";
+        MensajeNegocio.BodyMensaje body = new MensajeNegocio.BodyMensaje();
+        body.idPersona = "999";
+        original.bodyMensajeDefault = body;
+
+        Profile copia = original.copia();
+
+        assertEquals(original.nombre, copia.nombre);
+        assertEquals(original.llaveAes, copia.llaveAes);
+        assertEquals(original.idClienteDefault, copia.idClienteDefault);
+        assertEquals(original.wssePassword, copia.wssePassword);
+        assertEquals("999", copia.bodyMensajeDefault.idPersona);
+    }
+
+    @Test
+    void copia_esIndependienteDelOriginal_editarUnaNoTocaLaOtra() {
+        Profile original = new Profile();
+        original.nombre = "Recaudos - Comcel";
+        MensajeNegocio.BodyMensaje body = new MensajeNegocio.BodyMensaje();
+        body.idPersona = "999";
+        original.bodyMensajeDefault = body;
+
+        Profile copia = original.copia();
+        copia.nombre = "Recaudos - Comcel (copia)";
+        copia.bodyMensajeDefault.idPersona = "111";
+
+        assertEquals("Recaudos - Comcel", original.nombre);
+        assertEquals("999", original.bodyMensajeDefault.idPersona);
+        assertNotSame(original.bodyMensajeDefault, copia.bodyMensajeDefault);
     }
 }

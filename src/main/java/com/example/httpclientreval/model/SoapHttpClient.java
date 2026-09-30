@@ -29,7 +29,24 @@ public class SoapHttpClient {
     private static final String CLAVE_URL = "entorno.url";
     private static final String CLAVE_SOAP_ACTION = "entorno.soapAction";
     private static final String CLAVE_TIMEOUT_SEGUNDOS = "entorno.timeoutSegundos";
+    private static final String CLAVE_MARCADO_PRODUCCION = "entorno.marcadoProduccion";
     private static final Preferences PREFS = Preferences.userNodeForPackage(SoapHttpClient.class);
+
+    /**
+     * A qué tipo de ambiente apunta la URL configurada, para poder avisarlo de forma permanente en
+     * pantalla y que nadie envíe a producción sin darse cuenta.
+     */
+    public enum Ambiente {
+        /** La URL es exactamente {@link #URL_POR_DEFECTO}: el ambiente de pruebas de siempre. Es la única
+         *  forma de llegar a este estado; no se puede "declarar" pruebas con una URL distinta. */
+        PRUEBAS,
+        /** La URL no es la de pruebas y el usuario marcó explícitamente la casilla de Configuración
+         *  confirmando que apunta a producción. */
+        PRODUCCION,
+        /** La URL no es la de pruebas y nadie confirmó que sea producción: un ambiente propio, de
+         *  staging, o simplemente el paso intermedio antes de marcarla como producción. */
+        PERSONALIZADO
+    }
 
     /**
      * Cliente único para toda la app: es inmutable y seguro entre hilos, y al reutilizarlo se
@@ -66,10 +83,32 @@ public class SoapHttpClient {
         return PREFS.getInt(CLAVE_TIMEOUT_SEGUNDOS, TIMEOUT_POR_DEFECTO_SEGUNDOS);
     }
 
+    public static Ambiente getAmbiente() {
+        if (getUrl().equals(URL_POR_DEFECTO)) {
+            return Ambiente.PRUEBAS;
+        }
+        return PREFS.getBoolean(CLAVE_MARCADO_PRODUCCION, false) ? Ambiente.PRODUCCION : Ambiente.PERSONALIZADO;
+    }
+
+    public static boolean isMarcadoComoProduccion() {
+        return PREFS.getBoolean(CLAVE_MARCADO_PRODUCCION, false);
+    }
+
+    /** Solo tiene efecto si la URL actual no es la de pruebas: esa siempre es {@link Ambiente#PRUEBAS}. */
+    public static void setMarcadoComoProduccion(boolean marcado) {
+        PREFS.putBoolean(CLAVE_MARCADO_PRODUCCION, marcado);
+    }
+
     /** Lanza IllegalArgumentException con mensaje claro si la URL no es http(s) válida; no cambia nada si falla. */
     public static void setUrl(String url) {
         validarUrl(url);
-        PREFS.put(CLAVE_URL, url.trim());
+        String urlLimpia = url.trim();
+        if (!urlLimpia.equals(getUrl())) {
+            // Una URL nueva nunca hereda la confirmación de "es producción" de la URL anterior:
+            // hay que volver a marcarla a propósito, para no arrastrar una etiqueta que ya no aplica.
+            PREFS.putBoolean(CLAVE_MARCADO_PRODUCCION, false);
+        }
+        PREFS.put(CLAVE_URL, urlLimpia);
     }
 
     public static void setSoapAction(String soapAction) {
@@ -94,6 +133,7 @@ public class SoapHttpClient {
         PREFS.remove(CLAVE_URL);
         PREFS.remove(CLAVE_SOAP_ACTION);
         PREFS.remove(CLAVE_TIMEOUT_SEGUNDOS);
+        PREFS.remove(CLAVE_MARCADO_PRODUCCION);
         client = construirCliente(TIMEOUT_POR_DEFECTO_SEGUNDOS);
     }
 

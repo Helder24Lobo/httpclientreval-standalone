@@ -8,6 +8,7 @@ import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -19,6 +20,8 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -50,6 +53,7 @@ public class AppWindow extends JFrame {
     private static final String GRUPO_RECIENTES = "◷ Recientes";
 
     private final PerfilesPreferencias preferencias = PerfilesPreferencias.instancia();
+    private final AmbienteBanner ambienteBanner = new AmbienteBanner();
     private final JButton botonFavorito = new JButton();
     private HistorialDialog historialDialog;
     private final List<Profile> perfiles;
@@ -177,6 +181,7 @@ public class AppWindow extends JFrame {
 
         JPanel norte = new JPanel();
         norte.setLayout(new BoxLayout(norte, BoxLayout.Y_AXIS));
+        norte.add(ambienteBanner);
         norte.add(filaTransaccion);
         norte.add(filaAcciones);
 
@@ -545,6 +550,41 @@ public class AppWindow extends JFrame {
         JLabel etiquetaTimeout = new JLabel("Timeout (segundos):");
         Accesibilidad.etiquetar(etiquetaTimeout, campoTimeout, "Timeout en segundos");
 
+        // Casilla de doble confirmación: cambiar la URL a algo distinto de pruebas NO alcanza para que
+        // el rótulo permanente diga "PRODUCCIÓN" — hay que marcarla a propósito. Mientras el campo URL
+        // siga en el valor de pruebas, la casilla no aplica (esa combinación siempre es "Pruebas").
+        // Si la URL guardada ya estaba confirmada como producción, la casilla arranca marcada; pero en
+        // cuanto se edita el campo hacia CUALQUIER OTRO valor (no solo hacia el de pruebas) se
+        // desmarca sola, para no arrastrar sin querer la confirmación de la URL anterior a una nueva.
+        String urlAlAbrir = SoapHttpClient.getUrl();
+        JCheckBox marcarProduccion = new JCheckBox("Esta URL es de PRODUCCIÓN (no un ambiente de pruebas)");
+        marcarProduccion.setSelected(SoapHttpClient.isMarcadoComoProduccion());
+        Runnable sincronizarCasillaProduccion = () -> {
+            String actual = campoUrl.getText().trim();
+            boolean esPruebas = actual.equals(SoapHttpClient.URL_POR_DEFECTO);
+            marcarProduccion.setEnabled(!esPruebas);
+            if (esPruebas || !actual.equals(urlAlAbrir)) {
+                marcarProduccion.setSelected(false);
+            }
+        };
+        sincronizarCasillaProduccion.run();
+        campoUrl.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) {
+                sincronizarCasillaProduccion.run();
+            }
+
+            @Override
+            public void removeUpdate(DocumentEvent e) {
+                sincronizarCasillaProduccion.run();
+            }
+
+            @Override
+            public void changedUpdate(DocumentEvent e) {
+                sincronizarCasillaProduccion.run();
+            }
+        });
+
         JButton restablecerEntorno = new JButton("Restablecer al ambiente de pruebas");
         restablecerEntorno.addActionListener(e -> {
             campoUrl.setText(SoapHttpClient.URL_POR_DEFECTO);
@@ -583,6 +623,11 @@ public class AppWindow extends JFrame {
         gbc.gridx = 1;
         panel.add(campoTimeout, gbc);
         gbc.gridy = fila[0]++;
+        gbc.gridx = 0;
+        gbc.gridwidth = 2;
+        panel.add(marcarProduccion, gbc);
+        gbc.gridwidth = 1;
+        gbc.gridy = fila[0]++;
         gbc.gridx = 1;
         panel.add(restablecerEntorno, gbc);
 
@@ -598,12 +643,16 @@ public class AppWindow extends JFrame {
                 SoapHttpClient.setUrl(campoUrl.getText());
                 SoapHttpClient.setSoapAction(campoSoapAction.getText());
                 SoapHttpClient.setTimeoutSegundos((Integer) campoTimeout.getValue());
+                // Va después de setUrl: setUrl ya limpia la marca si la URL cambió, y aquí se deja
+                // el estado final tal cual quedó la casilla (lo que el usuario ve es lo que se guarda).
+                SoapHttpClient.setMarcadoComoProduccion(marcarProduccion.isSelected());
                 break;
             } catch (IllegalArgumentException ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Entorno del servicio",
                         JOptionPane.WARNING_MESSAGE);
             }
         }
+        ambienteBanner.actualizar();
 
         String nuevoTema = (String) comboTema.getSelectedItem();
         TemaPreferencias.guardarTema(nuevoTema);

@@ -2,6 +2,7 @@ package com.example.httpclientreval.ui;
 
 import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.model.SoapHttpClient;
+import com.example.httpclientreval.util.Registro;
 import com.formdev.flatlaf.FlatLaf;
 
 import javax.swing.BoxLayout;
@@ -693,8 +694,9 @@ public class AppWindow extends JFrame {
                     if (TemaPreferencias.SISTEMA.equals(TemaPreferencias.obtenerTema())) {
                         aplicarTema(get());
                     }
-                } catch (Exception ignorada) {
+                } catch (Exception ex) {
                     // Si no se pudo consultar el SO se deja el tema actual.
+                    Registro.advertencia("No se pudo consultar el tema del sistema operativo", ex);
                 }
             }
         }.execute();
@@ -714,6 +716,7 @@ public class AppWindow extends JFrame {
             FlatLaf.updateUI();
             ajustarTamanoVentana();
         } catch (Exception ex) {
+            Registro.error("No se pudo reinstalar el tema", ex);
             JOptionPane.showMessageDialog(this, "No se pudo aplicar el tema: " + ex.getMessage());
         }
     }

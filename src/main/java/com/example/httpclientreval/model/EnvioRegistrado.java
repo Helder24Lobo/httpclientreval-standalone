@@ -1,6 +1,7 @@
 package com.example.httpclientreval.model;
 
 import com.example.httpclientreval.crypto.AES256CBC;
+import com.example.httpclientreval.util.Registro;
 
 import java.time.LocalDateTime;
 
@@ -78,6 +79,7 @@ public class EnvioRegistrado {
             Thread.currentThread().interrupt();
             return fallido(hora, perfil, soapXml, e, System.currentTimeMillis() - inicio);
         } catch (Exception e) {
+            Registro.advertencia("Envío a " + perfil.nombre + " sin respuesta", e);
             return fallido(hora, perfil, soapXml, e, System.currentTimeMillis() - inicio);
         }
     }
@@ -98,6 +100,7 @@ public class EnvioRegistrado {
                 mensaje = negocio.mensaje;
             } catch (Exception e) {
                 errorDescifrado = e.getMessage();
+                Registro.advertencia("No se pudo descifrar OBJRequestResult del perfil " + perfil.nombre, e);
             }
         }
         return new EnvioRegistrado(hora, perfil, soapXml, respuesta.statusCode, respuesta.tiempoMs, respuesta.cuerpo,

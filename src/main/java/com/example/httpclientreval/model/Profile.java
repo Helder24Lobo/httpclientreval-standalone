@@ -7,8 +7,10 @@ import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 /**
@@ -72,10 +74,34 @@ public class Profile {
         return perfiles;
     }
 
-    /** Sobreescribe profiles.json con la lista completa (usado al registrar un perfil nuevo desde la UI). */
+    /**
+     * Sobreescribe profiles.json con la lista completa (usado al registrar, renombrar, eliminar o
+     * duplicar un perfil desde la UI). Escribe primero en un archivo temporal en el mismo directorio
+     * y lo renombra al final: si el proceso se interrumpe a mitad de camino (falla de disco, cierre
+     * forzado), profiles.json se queda con el contenido anterior completo, nunca a medio escribir.
+     */
     public static void saveAll(Path archivo, List<Profile> perfiles) throws IOException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        Files.writeString(archivo, gson.toJson(perfiles));
+        String json = gson.toJson(perfiles);
+
+        Path directorio = archivo.toAbsolutePath().getParent();
+        Path temporal = Files.createTempFile(directorio, archivo.getFileName().toString(), ".tmp");
+        try {
+            Files.writeString(temporal, json);
+            try {
+                // ATOMIC_MOVE: en el mismo volumen, el sistema operativo hace el reemplazo como una
+                // sola operación (rename), así que nunca queda un profiles.json a medias.
+                Files.move(temporal, archivo, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException noAtomico) {
+                // Algunos sistemas de archivos no soportan el movimiento atómico (ej. red, FAT32);
+                // se hace el reemplazo igual, aunque ya sin esa garantía.
+                Files.move(temporal, archivo, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            // No-op si el move ya tuvo éxito (el temporal ya no existe con ese nombre); limpia el
+            // archivo temporal si algo falló antes de llegar al move.
+            Files.deleteIfExists(temporal);
+        }
     }
 
     public static final String GRUPO_SIN_NOMBRE = "Otros";

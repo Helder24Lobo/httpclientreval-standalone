@@ -3,6 +3,7 @@ package com.example.httpclientreval.ui;
 import com.example.httpclientreval.crypto.AES256CBC;
 import com.example.httpclientreval.model.Envelope;
 import com.example.httpclientreval.model.Profile;
+import com.example.httpclientreval.util.Registro;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
@@ -82,6 +83,7 @@ public class DecryptPanel extends JPanel {
             salida.setTexto(jsonPlano);
             statusBanner.mostrarExito("Mensaje descifrado correctamente.");
         } catch (Exception ex) {
+            Registro.error("Error al descifrar con el perfil " + perfil.nombre, ex);
             statusBanner.mostrarError("Error al descifrar: " + ex.getMessage());
         }
     }

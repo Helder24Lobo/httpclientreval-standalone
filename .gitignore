@@ -6,3 +6,6 @@ build/
 
 # Contiene llaves AES reales de negocio; usa profiles.example.json como plantilla.
 profiles.json
+
+# Log de la app (Registro.java); se genera en el directorio de trabajo, no es código ni configuración.
+httpclientreval.log

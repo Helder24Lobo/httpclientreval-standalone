@@ -1,5 +1,6 @@
 package com.example.httpclientreval.ui;
 
+import com.example.httpclientreval.util.Registro;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
@@ -58,7 +59,9 @@ final class FormatoSalida {
                 return new Resultado(formatearXml(recortado), Tipo.XML);
             }
         } catch (Exception noEsValido) {
-            // Se muestra el texto original: mejor eso que ocultar una respuesta mal formada.
+            // Se muestra el texto original: mejor eso que ocultar una respuesta mal formada. Rutinario
+            // (pasa con cualquier JSON/XML inválido que llegue), por eso advertencia y no error.
+            Registro.advertencia("El texto empieza como JSON/XML pero no se pudo formatear", noEsValido);
         }
         return new Resultado(texto, Tipo.TEXTO);
     }

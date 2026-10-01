@@ -1,5 +1,6 @@
 package com.example.httpclientreval.model;
 
+import com.example.httpclientreval.util.Registro;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
@@ -44,7 +45,10 @@ public class RespuestaNegocioParser {
                         ? header.get("Mensaje").getAsString() : null;
                 return new Resultado(codigo, mensaje);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            // Rutinario: pasa siempre que la respuesta en claro no tiene la forma header/_header
+            // esperada (p. ej. vino vacía o el descifrado dio basura); no es un fallo del programa.
+            Registro.advertencia("La respuesta en claro no tiene header/_header con Codigo/Mensaje", e);
         }
         return new Resultado(null, null);
     }

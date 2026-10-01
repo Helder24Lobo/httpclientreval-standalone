@@ -2,6 +2,7 @@ package com.example.httpclientreval.ui;
 
 import com.example.httpclientreval.model.EnvioRegistrado;
 import com.example.httpclientreval.model.SoapHttpClient;
+import com.example.httpclientreval.util.Registro;
 
 import javax.swing.BorderFactory;
 import javax.swing.DefaultComboBoxModel;
@@ -326,6 +327,7 @@ final class HistorialDialog extends JDialog {
                     tabla.setRowSelectionInterval(0, 0);
                     tabla.scrollRectToVisible(tabla.getCellRect(0, 0, true));
                 } catch (Exception ex) {
+                    Registro.error("No se pudo reenviar la petición de " + original.perfilNombre, ex);
                     JOptionPane.showMessageDialog(HistorialDialog.this, "No se pudo reenviar: " + ex.getMessage(),
                             "Error", JOptionPane.ERROR_MESSAGE);
                 }

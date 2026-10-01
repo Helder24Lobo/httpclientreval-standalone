@@ -7,6 +7,7 @@ import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.model.SoapHttpClient;
 import com.example.httpclientreval.model.SoapRequestBuilder;
+import com.example.httpclientreval.util.Registro;
 import com.formdev.flatlaf.FlatClientProperties;
 
 import javax.swing.BorderFactory;
@@ -242,6 +243,7 @@ public class EncryptPanel extends JPanel {
         } catch (NumberFormatException ex) {
             mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros válidos.");
         } catch (Exception ex) {
+            Registro.error("Error al generar la petición del perfil " + perfil.nombre, ex);
             mostrarError("Error: " + ex.getMessage());
         }
     }
@@ -384,6 +386,7 @@ public class EncryptPanel extends JPanel {
                     mostrarResultadoEnvio(envio);
                 } catch (Exception ex) {
                     Throwable causa = ex.getCause() != null ? ex.getCause() : ex;
+                    Registro.error("Error al enviar la petición del perfil " + perfil.nombre, causa);
                     salidaHttp.setBadge("Error", false);
                     mostrarError("Error al enviar: " + causa.getMessage());
                 }

@@ -1,5 +1,6 @@
 package com.example.httpclientreval.model;
 
+import com.example.httpclientreval.util.Registro;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -37,6 +38,9 @@ public class SoapResponseParser {
             }
             return null;
         } catch (Exception e) {
+            // Rutinario: la respuesta puede no ser XML válido (ej. un SOAP Fault con otra forma,
+            // o el WS devolvió HTML de error); se trata igual que "no trae OBJRequestResult".
+            Registro.advertencia("La respuesta HTTP no se pudo parsear como XML al buscar OBJRequestResult", e);
             return null;
         }
     }

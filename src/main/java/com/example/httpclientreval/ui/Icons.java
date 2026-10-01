@@ -91,6 +91,14 @@ final class Icons {
         return icono("curl");
     }
 
+    static Icon exportar() {
+        return icono("exportar");
+    }
+
+    static Icon importar() {
+        return icono("importar");
+    }
+
     static Icon favorito() {
         return icono("favorito");
     }

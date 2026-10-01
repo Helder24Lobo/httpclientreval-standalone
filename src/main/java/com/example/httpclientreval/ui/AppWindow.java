@@ -142,6 +142,21 @@ public class AppWindow extends JFrame {
         historialEnvios.addActionListener(e -> abrirHistorial());
         Atajos.registrar(getRootPane(), Atajos.HISTORIAL, this::abrirHistorial);
 
+        JButton exportarPerfiles = new JButton("Exportar...", Icons.exportar());
+        exportarPerfiles.setToolTipText("Guarda uno o más perfiles en un archivo JSON aparte");
+        exportarPerfiles.addActionListener(e -> ImportarExportarPerfiles.exportar(this, archivoPerfiles, perfiles));
+
+        JButton importarPerfiles = new JButton("Importar...", Icons.importar());
+        importarPerfiles.setToolTipText("Trae perfiles de un archivo exportado, o de un profiles.json de otra máquina");
+        importarPerfiles.addActionListener(e -> {
+            Profile importado = ImportarExportarPerfiles.importar(this, archivoPerfiles, perfiles);
+            if (importado != null) {
+                mostrandoNuevaTransaccion = false;
+                cargarGrupos(importado.grupo(), importado);
+                refrescar();
+            }
+        });
+
         JButton configuracion = new JButton("Configuración", Icons.configuracion());
         configuracion.addActionListener(e -> abrirConfiguracion());
 
@@ -178,6 +193,8 @@ public class AppWindow extends JFrame {
         filaAcciones.add(nuevaTransaccion);
         filaAcciones.add(buscarPerfil);
         filaAcciones.add(historialEnvios);
+        filaAcciones.add(exportarPerfiles);
+        filaAcciones.add(importarPerfiles);
         filaAcciones.add(configuracion);
 
         JPanel norte = new JPanel();

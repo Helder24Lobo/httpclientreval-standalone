@@ -1,5 +1,6 @@
 package com.example.httpclientreval.ui;
 
+import com.example.httpclientreval.model.CredencialesPerfiles;
 import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.model.SoapHttpClient;
 import com.example.httpclientreval.util.Registro;
@@ -129,6 +130,10 @@ public class AppWindow extends JFrame {
         JButton renombrarPerfil = new JButton("Renombrar", Icons.editar());
         renombrarPerfil.addActionListener(e -> renombrarPerfilSeleccionado());
 
+        JButton credenciales = new JButton("Credenciales", Icons.llave());
+        credenciales.setToolTipText("Cambia la llave AES y las credenciales del WS del perfil seleccionado");
+        credenciales.addActionListener(e -> editarCredencialesPerfilSeleccionado());
+
         JButton eliminarPerfil = new JButton("Eliminar perfil", Icons.limpiar());
         eliminarPerfil.addActionListener(e -> eliminarPerfilSeleccionado());
 
@@ -185,6 +190,7 @@ public class AppWindow extends JFrame {
         filaTransaccion.add(botonFavorito);
         filaTransaccion.add(duplicarPerfil);
         filaTransaccion.add(renombrarPerfil);
+        filaTransaccion.add(credenciales);
         filaTransaccion.add(eliminarPerfil);
 
         JPanel filaAcciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -431,6 +437,41 @@ public class AppWindow extends JFrame {
             actualizarBotonFavorito();
         } catch (IOException ex) {
             seleccionado.nombre = nombreAnterior;
+            JOptionPane.showMessageDialog(this,
+                    "No se pudo actualizar profiles.json: " + ex.getMessage(),
+                    "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    /**
+     * Cambia la llave AES y las credenciales del WS del perfil seleccionado (y, a elección del usuario, de
+     * los demás que comparten su llave). Los paneles leen la llave del propio perfil al cifrar o descifrar,
+     * así que el cambio rige desde el siguiente envío sin recargar nada.
+     */
+    private void editarCredencialesPerfilSeleccionado() {
+        Profile seleccionado = (Profile) comboPerfil.getSelectedItem();
+        if (seleccionado == null) {
+            return;
+        }
+
+        CredencialesPerfiles.Cambio cambio = EditarCredencialesDialog.mostrar(this, seleccionado, perfiles);
+        if (cambio == null) {
+            return;
+        }
+
+        try {
+            Profile.saveAll(archivoPerfiles, perfiles);
+            // Solo el conteo: la llave y las contraseñas nunca se escriben en el log.
+            Registro.advertencia("Credenciales actualizadas en " + cambio.cantidad() + " perfil(es), desde \""
+                    + seleccionado.nombre + "\"", null);
+            JOptionPane.showMessageDialog(this,
+                    cambio.cantidad() == 1
+                            ? "Credenciales actualizadas."
+                            : "Credenciales actualizadas en " + cambio.cantidad() + " perfiles.",
+                    "Credenciales", JOptionPane.INFORMATION_MESSAGE);
+        } catch (IOException ex) {
+            cambio.revertir();
+            Registro.error("No se pudieron guardar las credenciales de " + seleccionado.nombre, ex);
             JOptionPane.showMessageDialog(this,
                     "No se pudo actualizar profiles.json: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);

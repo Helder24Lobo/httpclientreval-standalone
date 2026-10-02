@@ -63,6 +63,10 @@ final class Icons {
         return icono("editar");
     }
 
+    static Icon llave() {
+        return icono("llave");
+    }
+
     static Icon configuracion() {
         return icono("configuracion");
     }

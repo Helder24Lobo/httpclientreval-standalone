@@ -294,8 +294,12 @@ final class HistorialDialog extends JDialog {
         if (original == null) {
             return;
         }
+        // En Producción el mismo diálogo de siempre lleva además el aviso y la URL destino (un solo diálogo).
+        String avisoProduccion = ConfirmarEnvioProduccion.esProduccion()
+                ? "⚠ AMBIENTE ACTIVO: PRODUCCIÓN\nDestino: " + SoapHttpClient.getUrl() + "\n\n" : "";
         int confirmacion = JOptionPane.showConfirmDialog(this,
-                "Se enviará otra vez la misma petición de las " + HORA.format(original.hora) + "\n"
+                avisoProduccion
+                        + "Se enviará otra vez la misma petición de las " + HORA.format(original.hora) + "\n"
                         + original.perfilNombre + "\n\n"
                         + "Si la transacción ya se procesó, el servicio podría duplicarla o rechazarla.\n"
                         + "¿Reenviar?",

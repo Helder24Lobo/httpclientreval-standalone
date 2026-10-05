@@ -346,6 +346,9 @@ public class EncryptPanel extends JPanel {
             mostrarError("Primero presiona Generar.");
             return;
         }
+        if (!ConfirmarEnvioProduccion.confirmar(this, perfil.nombre)) {
+            return;
+        }
 
         statusBanner.ocultar();
         indicadorTamano.setVisible(false);

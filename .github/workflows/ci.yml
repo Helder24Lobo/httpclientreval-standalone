@@ -1,0 +1,84 @@
+name: CI
+
+# Pruebas en cada push y cada pull request. El empaquetado (JAR único + app con Java incluido)
+# se genera solo al subir a main/develop o al etiquetar una versión (v*), y se puede lanzar a mano.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+# Si llega otro push a la misma rama/PR, cancela la corrida anterior que sigue en curso.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Pruebas (gradle test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # gradlew está versionado sin permiso de ejecución (se creó en Windows).
+      - name: Permiso de ejecución para gradlew
+        run: chmod +x ./gradlew
+
+      - name: Pruebas
+        run: ./gradlew test --no-daemon
+
+      - name: Reporte de pruebas (solo si algo falló)
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reporte-pruebas
+          path: build/reports/tests/test/
+
+  empaquetar:
+    name: Empaquetar (JAR único + app Windows)
+    needs: test
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'push' &&
+       (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags/v')))
+    # Windows: jpackage genera el lanzador nativo del sistema donde corre, así que el .exe se arma aquí.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Construir JAR único y app autocontenida
+        run: ./gradlew jarEjecutable empaquetarApp --no-daemon
+
+      - name: Comprimir la app (carpeta con httpclientreval.exe y su Java)
+        shell: pwsh
+        run: Compress-Archive -Path build/jpackage/httpclientreval -DestinationPath build/httpclientreval-windows.zip
+
+      - name: Subir JAR único (necesita Java 17+)
+        uses: actions/upload-artifact@v4
+        with:
+          name: httpclientreval-jar
+          path: build/libs/httpclientreval-*-all.jar
+          if-no-files-found: error
+
+      - name: Subir app Windows (no necesita Java instalado)
+        uses: actions/upload-artifact@v4
+        with:
+          name: httpclientreval-windows
+          path: build/httpclientreval-windows.zip
+          if-no-files-found: error

@@ -41,3 +41,77 @@ test {
 processResources {
     from('profiles.example.json')
 }
+
+// ---------------------------------------------------------------------------------------------
+// Empaquetado
+// ---------------------------------------------------------------------------------------------
+
+// JAR único con todas las dependencias adentro: se ejecuta con `java -jar httpclientreval-1.0-all.jar`
+// en cualquier equipo que tenga Java 17+. Sin plugins: junta la salida del proyecto y el contenido de
+// las librerías de runtime (gson, FlatLaf, jsvg, RSyntaxTextArea).
+tasks.register('jarEjecutable', Jar) {
+    group = 'build'
+    description = 'JAR único con todas las dependencias (java -jar).'
+    archiveBaseName = 'httpclientreval'
+    archiveClassifier = 'all'
+
+    manifest {
+        attributes(
+                'Main-Class': application.mainClass,
+                // FlatLaf trae clases por versión de Java (META-INF/versions): el JAR único debe respetarlas.
+                'Multi-Release': 'true')
+    }
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from sourceSets.main.output
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    // Firmas y manifiestos de las librerías: invalidarían el JAR combinado.
+    exclude 'META-INF/*.SF', 'META-INF/*.DSA', 'META-INF/*.RSA', 'META-INF/MANIFEST.MF', 'module-info.class'
+}
+
+// App autocontenida con jpackage: una carpeta con httpclientreval.exe (o el lanzador del sistema) y su
+// propio Java adentro, para usarla en equipos SIN Java instalado. `app-image` no necesita WiX ni
+// herramientas extra; para un instalador .exe/.msi hay que instalar WiX Toolset y usar --type exe.
+tasks.register('empaquetarApp', Exec) {
+    group = 'build'
+    description = 'App autocontenida (jpackage, tipo app-image) en build/jpackage.'
+    dependsOn 'jarEjecutable'
+
+    def jpackage = javaToolchains.launcherFor(java.toolchain).map {
+        it.metadata.installationPath.file('bin/jpackage').asFile.absolutePath
+    }
+    def jar = tasks.named('jarEjecutable', Jar).flatMap { it.archiveFile }
+    def destino = layout.buildDirectory.dir('jpackage')
+    def entrada = layout.buildDirectory.dir('jpackage-input')
+
+    doFirst {
+        project.delete(destino, entrada)
+        project.copy {
+            from jar
+            into entrada
+        }
+        commandLine jpackage.get(),
+                '--type', 'app-image',
+                '--name', 'httpclientreval',
+                '--app-version', project.version.toString(),
+                '--input', entrada.get().asFile.absolutePath,
+                '--main-jar', jar.get().asFile.name,
+                '--main-class', application.mainClass.get(),
+                // jpackage recorta el Java incluido; estos módulos hacen falta en runtime (Swing, preferencias,
+                // HttpClient) y para HTTPS: sin jdk.crypto.ec/java.naming el TLS al WS fallaría solo en la app empaquetada.
+                '--add-modules', 'java.desktop,java.logging,java.prefs,java.xml,java.net.http,java.naming,jdk.crypto.ec',
+                '--java-options', '-Dfile.encoding=UTF-8',
+                '--dest', destino.get().asFile.absolutePath
+    }
+}
+
+// Codificación explícita: el runner de Windows de CI usaría cp1252 por defecto y corrompería las tildes
+// (en el código fuente y en las pruebas) al compilar.
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+tasks.withType(Test).configureEach {
+    defaultCharacterEncoding = 'UTF-8'
+}

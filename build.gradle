@@ -32,5 +32,12 @@ application {
 }
 
 test {
+    // Las pruebas no deben escribir en la carpeta de datos real del usuario (log, perfiles).
+    systemProperty 'httpclientreval.home', layout.buildDirectory.dir('test-home').get().asFile.absolutePath
     useJUnitPlatform()
+}
+
+// profiles.example.json se empaqueta como recurso: el arranque lo usa para "Crear con perfiles de ejemplo".
+processResources {
+    from('profiles.example.json')
 }

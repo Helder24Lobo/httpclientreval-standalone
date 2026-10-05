@@ -20,9 +20,9 @@ import java.util.List;
  * mismo entorno con 11 transacciones distintas se modela como 11 perfiles
  * (misma llaveAes, distinto bodyMensajeDefault cada uno).
  *
- * Se cargan desde profiles.json (ver profiles.example.json como plantilla);
- * profiles.json está en .gitignore para que ningún secreto real quede
- * commiteado. Si un perfil no trae bodyMensajeDefault/headerMensajeDefault,
+ * Se cargan desde profiles.json, en la carpeta de datos del usuario (ver RutasApp);
+ * así ningún secreto real queda junto al código ni se commitea por error. Ver
+ * profiles.example.json como plantilla. Si un perfil no trae bodyMensajeDefault/headerMensajeDefault,
  * se usan los defaults genéricos de MensajeNegocio.
  */
 public class Profile {
@@ -54,22 +54,26 @@ public class Profile {
     @SerializedName("headerMensajeDefault")
     public MensajeNegocio.HeaderMensaje headerMensajeDefault;
 
+    /**
+     * Lee la lista de perfiles de {@code archivo}. Lanza IllegalStateException si no existe o no
+     * trae ningún perfil, y JsonSyntaxException si el JSON está dañado (el arranque de la app
+     * captura todo eso y ofrece crear/restaurar el archivo, ver ArranqueDePerfiles).
+     */
     public static List<Profile> loadAll(Path archivo) throws IOException {
         if (!Files.exists(archivo)) {
-            throw new IllegalStateException(
-                    "No se encontró " + archivo.toAbsolutePath() + ".\n"
-                            + "Copia profiles.example.json a profiles.json (en la raíz del proyecto) "
-                            + "y completa ahí tu(s) llave(s) AES real(es). profiles.json está en "
-                            + ".gitignore, así que nunca se commitea.");
+            throw new IllegalStateException("No se encontró " + archivo.toAbsolutePath() + ".");
         }
+        return fromJson(Files.readString(archivo), archivo.toAbsolutePath().toString());
+    }
 
-        String contenido = Files.readString(archivo);
+    /** Parsea una lista de perfiles desde texto JSON; {@code origen} solo sirve para los mensajes de error. */
+    public static List<Profile> fromJson(String json, String origen) {
         Type tipoLista = new TypeToken<List<Profile>>() {
         }.getType();
-        List<Profile> perfiles = new Gson().fromJson(contenido, tipoLista);
+        List<Profile> perfiles = new Gson().fromJson(json, tipoLista);
 
         if (perfiles == null || perfiles.isEmpty()) {
-            throw new IllegalStateException(archivo.toAbsolutePath() + " no tiene perfiles definidos.");
+            throw new IllegalStateException(origen + " no tiene perfiles definidos.");
         }
         return perfiles;
     }
@@ -85,6 +89,8 @@ public class Profile {
         String json = gson.toJson(perfiles);
 
         Path directorio = archivo.toAbsolutePath().getParent();
+        // La carpeta de usuario puede no existir todavía (primer arranque).
+        Files.createDirectories(directorio);
         Path temporal = Files.createTempFile(directorio, archivo.getFileName().toString(), ".tmp");
         try {
             Files.writeString(temporal, json);

@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
  * Logger mínimo a archivo, sin dependencias nuevas (el proyecto no traía ningún logger): los
  * {@code catch (Exception)} que solo dejaban seguir la app sin dejar rastro hacían imposible saber,
  * después de que algo fallara, qué había pasado realmente. Escribe una línea por evento en
- * {@code httpclientreval.log}, junto a profiles.json (directorio de trabajo de la app).
+ * {@code httpclientreval.log}, en la carpeta de datos del usuario (ver {@link RutasApp}), junto a profiles.json.
  *
  * No usa un framework de logging (SLF4J, Logback) a propósito: para una app de escritorio de un solo
  * usuario, un archivo de texto plano de solo-agregar es toda la infraestructura que hace falta.
@@ -21,7 +21,7 @@ import java.time.format.DateTimeFormatter;
 public final class Registro {
 
     private static final DateTimeFormatter FORMATO = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
-    private static final Path ARCHIVO = Path.of("httpclientreval.log");
+    private static final Path ARCHIVO = RutasApp.archivoLog();
 
     private Registro() {
     }
@@ -40,6 +40,7 @@ public final class Registro {
         String encabezado = FORMATO.format(LocalDateTime.now()) + " [" + nivel + "] " + contexto
                 + (causa != null ? ": " + causa : "");
         try {
+            Files.createDirectories(ARCHIVO.toAbsolutePath().getParent());
             Files.writeString(ARCHIVO, encabezado + System.lineSeparator(),
                     StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             if (causa != null) {

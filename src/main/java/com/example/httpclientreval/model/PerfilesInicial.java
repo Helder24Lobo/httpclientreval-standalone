@@ -7,7 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Operaciones sobre el archivo de perfiles cuando falta o está dañado al arrancar (sin interfaz:
@@ -32,6 +35,45 @@ public final class PerfilesInicial {
     /** Valida {@code origen} (que sea un archivo de perfiles legible) y lo guarda como {@code destino}. */
     public static void copiar(Path origen, Path destino) throws IOException {
         Profile.saveAll(destino, Profile.loadAll(origen));
+    }
+
+    /** @return {@code true} si {@code archivo} existe y es un archivo de perfiles legible. */
+    public static boolean esLegible(Path archivo) {
+        try {
+            Profile.loadAll(archivo);
+            return true;
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    /**
+     * Suma a {@code destino} los perfiles de {@code origen} que aún no tiene (se comparan por nombre) y
+     * lo guarda. Lo que ya hay en {@code destino} manda: si un nombre está en ambos se conserva el de
+     * {@code destino}, así las transacciones creadas o editadas después nunca se pisan con las viejas.
+     * Si {@code destino} no existe o no es legible, queda igual que {@code origen}.
+     *
+     * @return cuántos perfiles de {@code origen} se agregaron.
+     */
+    public static int combinar(Path origen, Path destino) throws IOException {
+        List<Profile> resultado = new ArrayList<>(esLegible(destino) ? Profile.loadAll(destino) : List.of());
+        Set<String> nombres = new HashSet<>();
+        for (Profile p : resultado) {
+            nombres.add(clave(p));
+        }
+        int agregados = 0;
+        for (Profile p : Profile.loadAll(origen)) {
+            if (nombres.add(clave(p))) {
+                resultado.add(p);
+                agregados++;
+            }
+        }
+        Profile.saveAll(destino, resultado);
+        return agregados;
+    }
+
+    private static String clave(Profile p) {
+        return p.nombre == null ? "" : p.nombre.trim();
     }
 
     /**

@@ -14,16 +14,18 @@ class RutasAppTest {
     }
 
     @Test
-    void windowsUsaAppData() {
-        String appData = "C:\\Users\\ana\\AppData\\Roaming";
-        assertEquals(Path.of(appData, "httpclientreval"),
-                dir("Windows 11", Map.of("APPDATA", appData), "C:\\Users\\ana", null));
+    void windowsUsaElPerfilDelUsuarioYNoAppData() {
+        assertEquals(Path.of("C:\\Users\\ana", ".httpclientreval"),
+                dir("Windows 11", Map.of("APPDATA", "C:\\Users\\ana\\AppData\\Roaming"), "C:\\Users\\ana", null));
     }
 
     @Test
-    void windowsSinAppDataCaeAlRoamingDelHome() {
+    void laUbicacionClasicaDeWindowsSigueSiendoAppData() {
+        String appData = "C:\\Users\\ana\\AppData\\Roaming";
+        assertEquals(Path.of(appData, "httpclientreval"),
+                RutasApp.directorioClasico("Windows 11", Map.of("APPDATA", appData)::get, "C:\\Users\\ana"));
         assertEquals(Path.of("C:\\Users\\ana", "AppData", "Roaming", "httpclientreval"),
-                dir("Windows 11", Map.of(), "C:\\Users\\ana", null));
+                RutasApp.directorioClasico("Windows 11", Map.<String, String>of()::get, "C:\\Users\\ana"));
     }
 
     @Test

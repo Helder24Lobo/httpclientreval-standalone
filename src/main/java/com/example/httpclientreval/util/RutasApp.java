@@ -1,6 +1,8 @@
 package com.example.httpclientreval.util;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.function.Function;
 
@@ -9,7 +11,7 @@ import java.util.function.Function;
  * del proyecto y del directorio desde donde se lance, para que los perfiles (con llaves y
  * credenciales) no dependan de la carpeta de trabajo ni terminen junto al código.
  *
- * Windows: %APPDATA%\httpclientreval · macOS: ~/Library/Application Support/httpclientreval ·
+ * Windows: ~\.httpclientreval · macOS: ~/Library/Application Support/httpclientreval ·
  * Linux: $XDG_CONFIG_HOME/httpclientreval (o ~/.config/httpclientreval). La propiedad del sistema
  * {@value #PROPIEDAD_HOME} reemplaza todo lo anterior (útil para pruebas o una instalación portátil).
  */
@@ -37,11 +39,44 @@ public final class RutasApp {
         return directorioDatos().resolve(NOMBRE_LOG);
     }
 
-    /** Versión pura (sin leer el entorno real) para poder probar cada sistema operativo. */
+    /**
+     * Ubicaciones donde pudo quedar un profiles.json en versiones anteriores, para migrarlo en silencio
+     * al arrancar: la carpeta de datos que se usaba antes (en Windows, %APPDATA%) y la carpeta de trabajo.
+     */
+    public static List<Path> perfilesAnteriores() {
+        Path actual = archivoPerfiles().toAbsolutePath();
+        List<Path> candidatos = new ArrayList<>();
+        candidatos.add(directorioClasico(System.getProperty("os.name", ""), System::getenv,
+                System.getProperty("user.home", "")).resolve(NOMBRE_PERFILES));
+        candidatos.add(Path.of(NOMBRE_PERFILES));
+        List<Path> resultado = new ArrayList<>();
+        for (Path candidato : candidatos) {
+            Path absoluto = candidato.toAbsolutePath();
+            if (!absoluto.equals(actual) && !resultado.contains(absoluto)) {
+                resultado.add(absoluto);
+            }
+        }
+        return resultado;
+    }
+
+    /**
+     * Versión pura (sin leer el entorno real) para poder probar cada sistema operativo. En Windows va
+     * en el perfil del usuario y no en %APPDATA%: si la app se lanza desde una aplicación empaquetada
+     * (MSIX, como el escritorio de Claude), Windows redirige %APPDATA% a una copia privada y los
+     * perfiles guardados ahí no aparecen al lanzar desde otro lado.
+     */
     static Path directorioDatos(String sistema, Function<String, String> entorno, String home, String sobrescrito) {
         if (sobrescrito != null && !sobrescrito.isBlank()) {
             return Path.of(sobrescrito);
         }
+        if (sistema.toLowerCase(Locale.ROOT).contains("win")) {
+            return Path.of(home, "." + CARPETA);
+        }
+        return directorioClasico(sistema, entorno, home);
+    }
+
+    /** La carpeta de datos que usaban las versiones anteriores (en Windows, %APPDATA%). */
+    static Path directorioClasico(String sistema, Function<String, String> entorno, String home) {
         String so = sistema.toLowerCase(Locale.ROOT);
         if (so.contains("win")) {
             String appData = entorno.apply("APPDATA");

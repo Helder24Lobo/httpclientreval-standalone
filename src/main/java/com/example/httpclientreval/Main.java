@@ -17,9 +17,9 @@ import java.util.concurrent.atomic.AtomicReference;
  * ventana Swing (AppWindow) — ya no hay menús de consola.
  *
  * La llave AES y los defaults por transacción viven en profiles.json, dentro de la carpeta de datos
- * del usuario (ver RutasApp: en Windows, %APPDATA%\httpclientreval), fuera del proyecto para que
- * ningún secreto real quede junto al código. Si el archivo falta o no se puede leer, el arranque
- * ofrece crearlo o restaurarlo (ver ArranqueDePerfiles).
+ * del usuario (ver RutasApp: en Windows, ~\.httpclientreval), fuera del proyecto para que
+ * ningún secreto real quede junto al código. Si el archivo falta se migra solo desde ubicaciones
+ * anteriores; solo si está dañado el arranque pregunta qué hacer (ver ArranqueDePerfiles).
  */
 public class Main {
 

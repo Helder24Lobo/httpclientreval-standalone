@@ -57,4 +57,39 @@ class PerfilesInicialTest {
 
         assertEquals(Profile.loadAll(origen).size(), Profile.loadAll(destino).size());
     }
+
+    private static Profile perfil(String nombre, String llave) {
+        Profile p = new Profile();
+        p.nombre = nombre;
+        p.llaveAes = llave;
+        return p;
+    }
+
+    @Test
+    void combinarSumaLasViejasSinPisarLasNuevas(@TempDir Path tmp) throws Exception {
+        Path viejo = tmp.resolve("viejo.json");
+        Profile.saveAll(viejo, List.of(perfil("Recaudos - Consulta", "vieja"), perfil("Recaudos - Pago", "vieja")));
+        Path actual = tmp.resolve("profiles.json");
+        Profile.saveAll(actual, List.of(perfil("Recaudos - Consulta", "editada"), perfil("Retiro OTP", "nueva")));
+
+        int agregados = PerfilesInicial.combinar(viejo, actual);
+
+        List<Profile> resultado = Profile.loadAll(actual);
+        assertEquals(1, agregados);
+        assertEquals(List.of("Recaudos - Consulta", "Retiro OTP", "Recaudos - Pago"),
+                resultado.stream().map(p -> p.nombre).toList());
+        assertEquals("editada", resultado.get(0).llaveAes);
+    }
+
+    @Test
+    void combinarConDestinoDanadoDejaLosPerfilesDelOrigen(@TempDir Path tmp) throws Exception {
+        Path viejo = tmp.resolve("viejo.json");
+        Profile.saveAll(viejo, List.of(perfil("Recaudos - Consulta", "vieja")));
+        Path actual = tmp.resolve("profiles.json");
+        Files.writeString(actual, "{ esto no es json");
+
+        PerfilesInicial.combinar(viejo, actual);
+
+        assertEquals(1, Profile.loadAll(actual).size());
+    }
 }

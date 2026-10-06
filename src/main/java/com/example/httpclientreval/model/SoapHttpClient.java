@@ -8,16 +8,16 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.prefs.Preferences;
 
 /**
  * Envía el XML SOAP armado por SoapRequestBuilder directo al webservice RVLRRT, para no depender de
- * copiar/pegar a Postman. La URL, el SOAPAction y el timeout se pueden cambiar en Configuración (por
- * ejemplo para apuntar a producción en vez de a pruebas) sin recompilar; se recuerdan entre corridas.
- * Content-Type sí es fijo: este servicio solo habla XML SOAP.
+ * copiar/pegar a Postman. La URL, el SOAPAction y el timeout salen del ambiente activo (ver
+ * {@link Entornos}), que se administra desde la app sin recompilar. Content-Type sí es fijo: este
+ * servicio solo habla XML SOAP.
  */
 public class SoapHttpClient {
 
+    /** Valores del ambiente de Pruebas (el que se crea la primera vez). */
     public static final String URL_POR_DEFECTO = "https://servicios.reval.co:8110/RVLRRTpruebas/RVLRRT.svc";
     public static final String SOAP_ACTION_POR_DEFECTO = "http://tempuri.org/IRVLRRT/OBJRequest";
     public static final int TIMEOUT_POR_DEFECTO_SEGUNDOS = 30;
@@ -26,35 +26,29 @@ public class SoapHttpClient {
 
     private static final String CONTENT_TYPE = "text/xml; charset=utf-8";
 
-    private static final String CLAVE_URL = "entorno.url";
-    private static final String CLAVE_SOAP_ACTION = "entorno.soapAction";
-    private static final String CLAVE_TIMEOUT_SEGUNDOS = "entorno.timeoutSegundos";
-    private static final String CLAVE_MARCADO_PRODUCCION = "entorno.marcadoProduccion";
-    private static final Preferences PREFS = Preferences.userNodeForPackage(SoapHttpClient.class);
-
     /**
-     * A qué tipo de ambiente apunta la URL configurada, para poder avisarlo de forma permanente en
-     * pantalla y que nadie envíe a producción sin darse cuenta.
+     * A qué tipo de ambiente apunta el activo, para avisarlo de forma permanente en pantalla y que nadie
+     * envíe a producción sin darse cuenta.
      */
     public enum Ambiente {
-        /** La URL es exactamente {@link #URL_POR_DEFECTO}: el ambiente de pruebas de siempre. Es la única
-         *  forma de llegar a este estado; no se puede "declarar" pruebas con una URL distinta. */
+        /** La URL es exactamente {@link #URL_POR_DEFECTO} y no está marcado como producción. */
         PRUEBAS,
-        /** La URL no es la de pruebas y el usuario marcó explícitamente la casilla de Configuración
-         *  confirmando que apunta a producción. */
+        /** El ambiente activo está marcado explícitamente como producción. */
         PRODUCCION,
-        /** La URL no es la de pruebas y nadie confirmó que sea producción: un ambiente propio, de
-         *  staging, o simplemente el paso intermedio antes de marcarla como producción. */
+        /** Cualquier otro (desarrollo, staging, un servidor propio...). */
         PERSONALIZADO
     }
 
+    /** Solo para pruebas: ambiente que se usa en vez del activo de {@link Entornos}. */
+    private static volatile Entorno entornoForzado;
+
     /**
-     * Cliente único para toda la app: es inmutable y seguro entre hilos, y al reutilizarlo se
-     * aprovechan las conexiones ya abiertas (y la sesión TLS) en vez de renegociarlas en cada envío.
-     * Como el connectTimeout queda fijado al construirlo, cambiar el timeout reconstruye este campo
-     * (perdiendo esa reutilización una sola vez); en el resto de envíos se sigue compartiendo igual.
+     * Cliente compartido: es inmutable y seguro entre hilos, y al reutilizarlo se aprovechan las
+     * conexiones ya abiertas (y la sesión TLS). Como el connectTimeout queda fijado al construirlo, se
+     * reconstruye solo cuando cambia el timeout del ambiente (p. ej. al activar otro).
      */
-    private static volatile HttpClient client = construirCliente(getTimeoutSegundos());
+    private static HttpClient client;
+    private static int timeoutDelCliente = -1;
 
     private SoapHttpClient() {
     }
@@ -71,70 +65,38 @@ public class SoapHttpClient {
         }
     }
 
+    /** El ambiente al que se está apuntando ahora. */
+    public static Entorno entornoActivo() {
+        Entorno forzado = entornoForzado;
+        return forzado != null ? forzado : Entornos.instancia().activo();
+    }
+
+    /** Solo para pruebas: {@code null} vuelve al ambiente activo real. */
+    static void forzarEntorno(Entorno entorno) {
+        entornoForzado = entorno;
+    }
+
     public static String getUrl() {
-        return PREFS.get(CLAVE_URL, URL_POR_DEFECTO);
+        return entornoActivo().url;
     }
 
     public static String getSoapAction() {
-        return PREFS.get(CLAVE_SOAP_ACTION, SOAP_ACTION_POR_DEFECTO);
+        return entornoActivo().soapAction;
     }
 
     public static int getTimeoutSegundos() {
-        return PREFS.getInt(CLAVE_TIMEOUT_SEGUNDOS, TIMEOUT_POR_DEFECTO_SEGUNDOS);
+        return entornoActivo().timeoutSegundos;
     }
 
     public static Ambiente getAmbiente() {
-        if (getUrl().equals(URL_POR_DEFECTO)) {
-            return Ambiente.PRUEBAS;
+        return ambienteDe(entornoActivo());
+    }
+
+    public static Ambiente ambienteDe(Entorno entorno) {
+        if (entorno.produccion) {
+            return Ambiente.PRODUCCION;
         }
-        return PREFS.getBoolean(CLAVE_MARCADO_PRODUCCION, false) ? Ambiente.PRODUCCION : Ambiente.PERSONALIZADO;
-    }
-
-    public static boolean isMarcadoComoProduccion() {
-        return PREFS.getBoolean(CLAVE_MARCADO_PRODUCCION, false);
-    }
-
-    /** Solo tiene efecto si la URL actual no es la de pruebas: esa siempre es {@link Ambiente#PRUEBAS}. */
-    public static void setMarcadoComoProduccion(boolean marcado) {
-        PREFS.putBoolean(CLAVE_MARCADO_PRODUCCION, marcado);
-    }
-
-    /** Lanza IllegalArgumentException con mensaje claro si la URL no es http(s) válida; no cambia nada si falla. */
-    public static void setUrl(String url) {
-        validarUrl(url);
-        String urlLimpia = url.trim();
-        if (!urlLimpia.equals(getUrl())) {
-            // Una URL nueva nunca hereda la confirmación de "es producción" de la URL anterior:
-            // hay que volver a marcarla a propósito, para no arrastrar una etiqueta que ya no aplica.
-            PREFS.putBoolean(CLAVE_MARCADO_PRODUCCION, false);
-        }
-        PREFS.put(CLAVE_URL, urlLimpia);
-    }
-
-    public static void setSoapAction(String soapAction) {
-        if (soapAction == null || soapAction.isBlank()) {
-            throw new IllegalArgumentException("El SOAPAction no puede quedar vacío.");
-        }
-        PREFS.put(CLAVE_SOAP_ACTION, soapAction.trim());
-    }
-
-    public static void setTimeoutSegundos(int segundos) {
-        if (segundos < TIMEOUT_MINIMO_SEGUNDOS || segundos > TIMEOUT_MAXIMO_SEGUNDOS) {
-            throw new IllegalArgumentException("El timeout debe estar entre " + TIMEOUT_MINIMO_SEGUNDOS
-                    + " y " + TIMEOUT_MAXIMO_SEGUNDOS + " segundos.");
-        }
-        PREFS.putInt(CLAVE_TIMEOUT_SEGUNDOS, segundos);
-        // El connectTimeout va en el cliente, no en la petición: hay que reconstruirlo para que aplique.
-        client = construirCliente(segundos);
-    }
-
-    /** Deshace cualquier cambio de entorno y vuelve a apuntar al ambiente de pruebas de siempre. */
-    public static void restablecerEntorno() {
-        PREFS.remove(CLAVE_URL);
-        PREFS.remove(CLAVE_SOAP_ACTION);
-        PREFS.remove(CLAVE_TIMEOUT_SEGUNDOS);
-        PREFS.remove(CLAVE_MARCADO_PRODUCCION);
-        client = construirCliente(TIMEOUT_POR_DEFECTO_SEGUNDOS);
+        return URL_POR_DEFECTO.equals(entorno.url) ? Ambiente.PRUEBAS : Ambiente.PERSONALIZADO;
     }
 
     /** Lanza IllegalArgumentException con mensaje claro si {@code url} no es una URL http(s) válida. */
@@ -157,25 +119,31 @@ public class SoapHttpClient {
         }
     }
 
-    private static HttpClient construirCliente(int timeoutSegundos) {
-        return HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(timeoutSegundos))
-                .build();
+    private static synchronized HttpClient clienteParaTimeout(int timeoutSegundos) {
+        if (client == null || timeoutDelCliente != timeoutSegundos) {
+            client = HttpClient.newBuilder()
+                    .connectTimeout(Duration.ofSeconds(timeoutSegundos))
+                    .build();
+            timeoutDelCliente = timeoutSegundos;
+        }
+        return client;
     }
 
-    /** Envía el XML SOAP y devuelve el código HTTP, el body crudo y cuánto tardó la petición. */
+    /** Envía el XML SOAP al ambiente activo y devuelve el código HTTP, el body crudo y cuánto tardó la petición. */
     public static Respuesta enviar(String soapXml) throws IOException, InterruptedException {
-        Duration timeout = Duration.ofSeconds(getTimeoutSegundos());
+        // Una sola lectura del ambiente: URL, SOAPAction y timeout salen del mismo, aunque lo cambien en medio.
+        Entorno entorno = entornoActivo();
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(getUrl()))
-                .timeout(timeout)
+                .uri(URI.create(entorno.url))
+                .timeout(Duration.ofSeconds(entorno.timeoutSegundos))
                 .header("Content-Type", CONTENT_TYPE)
-                .header("SOAPAction", getSoapAction())
+                .header("SOAPAction", entorno.soapAction)
                 .POST(HttpRequest.BodyPublishers.ofString(soapXml, StandardCharsets.UTF_8))
                 .build();
 
         long inicio = System.currentTimeMillis();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = clienteParaTimeout(entorno.timeoutSegundos)
+                .send(request, HttpResponse.BodyHandlers.ofString());
         long tiempoMs = System.currentTimeMillis() - inicio;
 
         return new Respuesta(response.statusCode(), response.body(), tiempoMs);
@@ -188,9 +156,10 @@ public class SoapHttpClient {
      * URL, el SOAPAction o el Content-Type.
      */
     public static String curlPara(String soapXml) {
-        return "curl -X POST '" + getUrl() + "' \\\n"
+        Entorno entorno = entornoActivo();
+        return "curl -X POST '" + entorno.url + "' \\\n"
                 + "  -H 'Content-Type: " + CONTENT_TYPE + "' \\\n"
-                + "  -H 'SOAPAction: " + getSoapAction() + "' \\\n"
+                + "  -H 'SOAPAction: " + entorno.soapAction + "' \\\n"
                 + "  --data-raw '" + escaparComillaSimple(soapXml == null ? "" : soapXml) + "'";
     }
 

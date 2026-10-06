@@ -2,7 +2,6 @@ package com.example.httpclientreval.model;
 
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -21,35 +20,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Prueba {@link SoapHttpClient#enviar} contra un servidor HTTP real (el embebido del JDK,
  * {@link HttpServer}), no solo la construcción del comando cURL o la validación de la URL.
  *
- * enviar() lee URL/SOAPAction/timeout de las preferencias reales del usuario (mismas que usa la app),
- * así que cada prueba guarda esos valores en @BeforeEach y los restaura en @AfterEach: al terminar
- * ./gradlew test, el entorno configurado en la app queda exactamente como estaba antes de correrlas.
+ * enviar() lee URL/SOAPAction/timeout del ambiente activo; aquí se reemplaza por uno de prueba que apunta al
+ * servidor local (SoapHttpClient.forzarEntorno), sin tocar entornos.json ni nada del usuario.
  */
 class SoapHttpClientEnviarTest {
 
     private HttpServer servidor;
-    private String urlOriginal;
-    private String soapActionOriginal;
-    private int timeoutOriginal;
-    private boolean marcadoProduccionOriginal;
-
-    @BeforeEach
-    void guardarEntornoActual() {
-        urlOriginal = SoapHttpClient.getUrl();
-        soapActionOriginal = SoapHttpClient.getSoapAction();
-        timeoutOriginal = SoapHttpClient.getTimeoutSegundos();
-        marcadoProduccionOriginal = SoapHttpClient.isMarcadoComoProduccion();
-    }
+    /** Ambiente de prueba que apunta al servidor local; reemplaza al activo real mientras dura cada prueba. */
+    private Entorno entorno;
 
     @AfterEach
     void restaurarEntorno() {
         if (servidor != null) {
             servidor.stop(0);
         }
-        SoapHttpClient.setUrl(urlOriginal);
-        SoapHttpClient.setSoapAction(soapActionOriginal);
-        SoapHttpClient.setTimeoutSegundos(timeoutOriginal);
-        SoapHttpClient.setMarcadoComoProduccion(marcadoProduccionOriginal);
+        SoapHttpClient.forzarEntorno(null);
     }
 
     /** Arranca un servidor local en el puerto 0 (el SO elige uno libre) y apunta SoapHttpClient ahí. */
@@ -57,7 +42,9 @@ class SoapHttpClientEnviarTest {
         servidor = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         servidor.createContext(contexto, manejador);
         servidor.start();
-        SoapHttpClient.setUrl("http://127.0.0.1:" + servidor.getAddress().getPort() + contexto);
+        entorno = new Entorno("Prueba local");
+        entorno.url = "http://127.0.0.1:" + servidor.getAddress().getPort() + contexto;
+        SoapHttpClient.forzarEntorno(entorno);
     }
 
     private static void responder(com.sun.net.httpserver.HttpExchange ex, int status, String cuerpo) throws IOException {
@@ -127,7 +114,7 @@ class SoapHttpClientEnviarTest {
                 ex.close();
             }
         });
-        SoapHttpClient.setTimeoutSegundos(SoapHttpClient.TIMEOUT_MINIMO_SEGUNDOS);
+        entorno.timeoutSegundos = SoapHttpClient.TIMEOUT_MINIMO_SEGUNDOS;
 
         long inicio = System.currentTimeMillis();
         assertThrows(HttpTimeoutException.class, () -> SoapHttpClient.enviar("<peticion/>"));

@@ -31,6 +31,8 @@ public class EnvioRegistrado {
     public final Profile perfil;
     /** Nombre del perfil al momento del envío (el perfil puede renombrarse después). */
     public final String perfilNombre;
+    /** Ambiente al que se envió: sirve para avisar si se intenta reenviar a otro (la petición va cifrada con SU llave). */
+    public final String entornoNombre;
     public final String soapEnviado;
 
     /** Código HTTP, o null si no hubo respuesta. */
@@ -53,6 +55,7 @@ public class EnvioRegistrado {
         this.hora = hora;
         this.perfil = perfil;
         this.perfilNombre = perfil.nombre;
+        this.entornoNombre = SoapHttpClient.entornoActivo().nombre;
         this.soapEnviado = soapEnviado;
         this.statusCode = statusCode;
         this.tiempoMs = tiempoMs;
@@ -94,7 +97,7 @@ public class EnvioRegistrado {
 
         if (cifrado != null) {
             try {
-                plano = AES256CBC.decryptWithPrependedIV(cifrado, perfil.llaveAes);
+                plano = AES256CBC.decryptWithPrependedIV(cifrado, Credenciales.llave(perfil));
                 RespuestaNegocioParser.Resultado negocio = RespuestaNegocioParser.parsear(plano);
                 codigo = negocio.codigo;
                 mensaje = negocio.mensaje;

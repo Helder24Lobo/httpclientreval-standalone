@@ -20,6 +20,7 @@ public final class RutasApp {
     public static final String PROPIEDAD_HOME = "httpclientreval.home";
     public static final String NOMBRE_PERFILES = "profiles.json";
     public static final String NOMBRE_LOG = "httpclientreval.log";
+    public static final String NOMBRE_ENTORNOS = "entornos.json";
 
     private static final String CARPETA = "httpclientreval";
 
@@ -33,6 +34,10 @@ public final class RutasApp {
 
     public static Path archivoPerfiles() {
         return directorioDatos().resolve(NOMBRE_PERFILES);
+    }
+
+    public static Path archivoEntornos() {
+        return directorioDatos().resolve(NOMBRE_ENTORNOS);
     }
 
     public static Path archivoLog() {

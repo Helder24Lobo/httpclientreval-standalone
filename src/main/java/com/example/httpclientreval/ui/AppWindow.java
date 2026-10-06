@@ -1,8 +1,6 @@
 package com.example.httpclientreval.ui;
 
-import com.example.httpclientreval.model.CredencialesPerfiles;
 import com.example.httpclientreval.model.Profile;
-import com.example.httpclientreval.model.SoapHttpClient;
 import com.example.httpclientreval.util.Registro;
 import com.formdev.flatlaf.FlatLaf;
 
@@ -10,20 +8,14 @@ import javax.swing.BoxLayout;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JSpinner;
-import javax.swing.JTextField;
 import javax.swing.KeyStroke;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingWorker;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Dimension;
@@ -130,9 +122,9 @@ public class AppWindow extends JFrame {
         JButton renombrarPerfil = new JButton("Renombrar", Icons.editar());
         renombrarPerfil.addActionListener(e -> renombrarPerfilSeleccionado());
 
-        JButton credenciales = new JButton("Credenciales", Icons.llave());
-        credenciales.setToolTipText("Cambia la llave AES y las credenciales del WS del perfil seleccionado");
-        credenciales.addActionListener(e -> editarCredencialesPerfilSeleccionado());
+        JButton ambientes = new JButton("Ambientes...", Icons.llave());
+        ambientes.setToolTipText("Crea y edita los ambientes (Pruebas, Producción...) con su URL y sus credenciales, y elige cuál usar");
+        ambientes.addActionListener(e -> abrirAmbientes());
 
         JButton eliminarPerfil = new JButton("Eliminar perfil", Icons.limpiar());
         eliminarPerfil.addActionListener(e -> eliminarPerfilSeleccionado());
@@ -190,7 +182,6 @@ public class AppWindow extends JFrame {
         filaTransaccion.add(botonFavorito);
         filaTransaccion.add(duplicarPerfil);
         filaTransaccion.add(renombrarPerfil);
-        filaTransaccion.add(credenciales);
         filaTransaccion.add(eliminarPerfil);
 
         JPanel filaAcciones = new JPanel(new FlowLayout(FlowLayout.LEFT));
@@ -201,10 +192,12 @@ public class AppWindow extends JFrame {
         filaAcciones.add(historialEnvios);
         filaAcciones.add(exportarPerfiles);
         filaAcciones.add(importarPerfiles);
+        filaAcciones.add(ambientes);
         filaAcciones.add(configuracion);
 
         JPanel norte = new JPanel();
         norte.setLayout(new BoxLayout(norte, BoxLayout.Y_AXIS));
+        ambienteBanner.alPulsar(this::abrirAmbientes);
         norte.add(ambienteBanner);
         norte.add(filaTransaccion);
         norte.add(filaAcciones);
@@ -443,41 +436,6 @@ public class AppWindow extends JFrame {
         }
     }
 
-    /**
-     * Cambia la llave AES y las credenciales del WS del perfil seleccionado (y, a elección del usuario, de
-     * los demás que comparten su llave). Los paneles leen la llave del propio perfil al cifrar o descifrar,
-     * así que el cambio rige desde el siguiente envío sin recargar nada.
-     */
-    private void editarCredencialesPerfilSeleccionado() {
-        Profile seleccionado = (Profile) comboPerfil.getSelectedItem();
-        if (seleccionado == null) {
-            return;
-        }
-
-        CredencialesPerfiles.Cambio cambio = EditarCredencialesDialog.mostrar(this, seleccionado, perfiles);
-        if (cambio == null) {
-            return;
-        }
-
-        try {
-            Profile.saveAll(archivoPerfiles, perfiles);
-            // Solo el conteo: la llave y las contraseñas nunca se escriben en el log.
-            Registro.advertencia("Credenciales actualizadas en " + cambio.cantidad() + " perfil(es), desde \""
-                    + seleccionado.nombre + "\"", null);
-            JOptionPane.showMessageDialog(this,
-                    cambio.cantidad() == 1
-                            ? "Credenciales actualizadas."
-                            : "Credenciales actualizadas en " + cambio.cantidad() + " perfiles.",
-                    "Credenciales", JOptionPane.INFORMATION_MESSAGE);
-        } catch (IOException ex) {
-            cambio.revertir();
-            Registro.error("No se pudieron guardar las credenciales de " + seleccionado.nombre, ex);
-            JOptionPane.showMessageDialog(this,
-                    "No se pudo actualizar profiles.json: " + ex.getMessage(),
-                    "Error", JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
     /** true si algún OTRO perfil (no {@code excepto}) ya tiene ese nombre, sin distinguir mayúsculas. */
     private boolean existeNombre(Profile excepto, String nombre) {
         for (Profile otro : perfiles) {
@@ -577,6 +535,7 @@ public class AppWindow extends JFrame {
         refrescar();
     }
 
+    /** Tema y tamaño de fuente. El ambiente (URL y credenciales) se administra en "Ambientes". */
     private void abrirConfiguracion() {
         JComboBox<String> comboTema = new JComboBox<>(new String[]{
                 TemaPreferencias.SISTEMA, TemaPreferencias.OSCURO, TemaPreferencias.CLARO});
@@ -595,123 +554,24 @@ public class AppWindow extends JFrame {
         comboFuente.setToolTipText("También con " + Atajos.texto(Atajos.AUMENTAR_FUENTE) + " / "
                 + Atajos.texto(Atajos.REDUCIR_FUENTE) + " y " + Atajos.texto(Atajos.RESTABLECER_FUENTE) + " para restablecer");
 
-        // Entorno del servicio: URL, SOAPAction y timeout, para poder apuntar a producción u otro
-        // ambiente (o ajustar el tiempo de espera) sin recompilar la app.
-        JTextField campoUrl = new JTextField(SoapHttpClient.getUrl(), 28);
-        JTextField campoSoapAction = new JTextField(SoapHttpClient.getSoapAction(), 28);
-        JSpinner campoTimeout = new JSpinner(new SpinnerNumberModel(SoapHttpClient.getTimeoutSegundos(),
-                SoapHttpClient.TIMEOUT_MINIMO_SEGUNDOS, SoapHttpClient.TIMEOUT_MAXIMO_SEGUNDOS, 5));
-
-        JLabel etiquetaUrl = new JLabel("URL del servicio:");
-        Accesibilidad.etiquetar(etiquetaUrl, campoUrl, "URL del servicio");
-        JLabel etiquetaSoapAction = new JLabel("SOAPAction:");
-        Accesibilidad.etiquetar(etiquetaSoapAction, campoSoapAction, "SOAPAction");
-        JLabel etiquetaTimeout = new JLabel("Timeout (segundos):");
-        Accesibilidad.etiquetar(etiquetaTimeout, campoTimeout, "Timeout en segundos");
-
-        // Casilla de doble confirmación: cambiar la URL a algo distinto de pruebas NO alcanza para que
-        // el rótulo permanente diga "PRODUCCIÓN" — hay que marcarla a propósito. Mientras el campo URL
-        // siga en el valor de pruebas, la casilla no aplica (esa combinación siempre es "Pruebas").
-        // Si la URL guardada ya estaba confirmada como producción, la casilla arranca marcada; pero en
-        // cuanto se edita el campo hacia CUALQUIER OTRO valor (no solo hacia el de pruebas) se
-        // desmarca sola, para no arrastrar sin querer la confirmación de la URL anterior a una nueva.
-        String urlAlAbrir = SoapHttpClient.getUrl();
-        JCheckBox marcarProduccion = new JCheckBox("Esta URL es de PRODUCCIÓN (no un ambiente de pruebas)");
-        marcarProduccion.setSelected(SoapHttpClient.isMarcadoComoProduccion());
-        Runnable sincronizarCasillaProduccion = () -> {
-            String actual = campoUrl.getText().trim();
-            boolean esPruebas = actual.equals(SoapHttpClient.URL_POR_DEFECTO);
-            marcarProduccion.setEnabled(!esPruebas);
-            if (esPruebas || !actual.equals(urlAlAbrir)) {
-                marcarProduccion.setSelected(false);
-            }
-        };
-        sincronizarCasillaProduccion.run();
-        campoUrl.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) {
-                sincronizarCasillaProduccion.run();
-            }
-
-            @Override
-            public void removeUpdate(DocumentEvent e) {
-                sincronizarCasillaProduccion.run();
-            }
-
-            @Override
-            public void changedUpdate(DocumentEvent e) {
-                sincronizarCasillaProduccion.run();
-            }
-        });
-
-        JButton restablecerEntorno = new JButton("Restablecer al ambiente de pruebas");
-        restablecerEntorno.addActionListener(e -> {
-            campoUrl.setText(SoapHttpClient.URL_POR_DEFECTO);
-            campoSoapAction.setText(SoapHttpClient.SOAP_ACTION_POR_DEFECTO);
-            campoTimeout.setValue(SoapHttpClient.TIMEOUT_POR_DEFECTO_SEGUNDOS);
-        });
-
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = FormFields.gbc();
-        int[] fila = {0};
-        gbc.gridy = fila[0]++;
+        gbc.gridy = 0;
         gbc.gridx = 0;
         panel.add(etiquetaTema, gbc);
         gbc.gridx = 1;
         panel.add(comboTema, gbc);
-        gbc.gridy = fila[0]++;
+        gbc.gridy = 1;
         gbc.gridx = 0;
         panel.add(etiquetaFuente, gbc);
         gbc.gridx = 1;
         panel.add(comboFuente, gbc);
 
-        FormFields.agregarSeccion(panel, gbc, fila, "Entorno del servicio");
-        gbc.gridy = fila[0]++;
-        gbc.gridx = 0;
-        panel.add(etiquetaUrl, gbc);
-        gbc.gridx = 1;
-        panel.add(campoUrl, gbc);
-        gbc.gridy = fila[0]++;
-        gbc.gridx = 0;
-        panel.add(etiquetaSoapAction, gbc);
-        gbc.gridx = 1;
-        panel.add(campoSoapAction, gbc);
-        gbc.gridy = fila[0]++;
-        gbc.gridx = 0;
-        panel.add(etiquetaTimeout, gbc);
-        gbc.gridx = 1;
-        panel.add(campoTimeout, gbc);
-        gbc.gridy = fila[0]++;
-        gbc.gridx = 0;
-        gbc.gridwidth = 2;
-        panel.add(marcarProduccion, gbc);
-        gbc.gridwidth = 1;
-        gbc.gridy = fila[0]++;
-        gbc.gridx = 1;
-        panel.add(restablecerEntorno, gbc);
-
-        // En bucle: si la URL no es válida se avisa y se vuelve a mostrar el mismo panel (con lo que
-        // ya se había escrito) en vez de cerrar la ventana como si se hubiera guardado.
-        while (true) {
-            int resultado = JOptionPane.showConfirmDialog(this, panel, "Configuración",
-                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-            if (resultado != JOptionPane.OK_OPTION) {
-                return;
-            }
-            try {
-                SoapHttpClient.setUrl(campoUrl.getText());
-                SoapHttpClient.setSoapAction(campoSoapAction.getText());
-                SoapHttpClient.setTimeoutSegundos((Integer) campoTimeout.getValue());
-                // Va después de setUrl: setUrl ya limpia la marca si la URL cambió, y aquí se deja
-                // el estado final tal cual quedó la casilla (lo que el usuario ve es lo que se guarda).
-                SoapHttpClient.setMarcadoComoProduccion(marcarProduccion.isSelected());
-                break;
-            } catch (IllegalArgumentException ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "Entorno del servicio",
-                        JOptionPane.WARNING_MESSAGE);
-            }
+        int resultado = JOptionPane.showConfirmDialog(this, panel, "Configuración",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (resultado != JOptionPane.OK_OPTION) {
+            return;
         }
-        ambienteBanner.actualizar();
 
         String nuevoTema = (String) comboTema.getSelectedItem();
         TemaPreferencias.guardarTema(nuevoTema);
@@ -723,6 +583,12 @@ public class AppWindow extends JFrame {
         } else {
             aplicarTema(TemaPreferencias.esOscuro(nuevoTema));
         }
+    }
+
+    /** Abre el administrador de ambientes (URL, credenciales y cuál está activo) y refresca el rótulo al cerrarlo. */
+    private void abrirAmbientes() {
+        AmbientesDialog.mostrar(this);
+        ambienteBanner.actualizar();
     }
 
     /** Cambia el tamaño de fuente de toda la interfaz (se recuerda para la próxima vez). */

@@ -1,5 +1,6 @@
 package com.example.httpclientreval;
 
+import com.example.httpclientreval.model.Entornos;
 import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.ui.AppWindow;
 import com.example.httpclientreval.ui.ArranqueDePerfiles;
@@ -33,6 +34,8 @@ public class Main {
         if (perfiles == null) {
             System.exit(0); // el usuario eligió salir en el diálogo de arranque
         }
+        // Los ambientes base (Pruebas y Producción) heredan las credenciales de los perfiles la primera vez.
+        Entornos.inicializar(perfiles);
 
         SwingUtilities.invokeLater(() -> {
             AppWindow ventana = new AppWindow(perfiles, archivoPerfiles);

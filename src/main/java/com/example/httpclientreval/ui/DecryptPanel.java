@@ -2,6 +2,7 @@ package com.example.httpclientreval.ui;
 
 import com.example.httpclientreval.crypto.AES256CBC;
 import com.example.httpclientreval.model.Envelope;
+import com.example.httpclientreval.model.Credenciales;
 import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.util.Registro;
 
@@ -79,7 +80,7 @@ public class DecryptPanel extends JPanel {
                 return;
             }
             String base64Mensaje = texto.startsWith("{") ? Envelope.extraerMensaje(texto) : texto;
-            String jsonPlano = AES256CBC.decryptWithPrependedIV(base64Mensaje, perfil.llaveAes);
+            String jsonPlano = AES256CBC.decryptWithPrependedIV(base64Mensaje, Credenciales.llave(perfil));
             salida.setTexto(jsonPlano);
             statusBanner.mostrarExito("Mensaje descifrado correctamente.");
         } catch (Exception ex) {

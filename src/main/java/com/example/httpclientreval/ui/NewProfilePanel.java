@@ -1,6 +1,5 @@
 package com.example.httpclientreval.ui;
 
-import com.example.httpclientreval.crypto.AES256CBC;
 import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
 import com.formdev.flatlaf.FlatClientProperties;
@@ -24,8 +23,8 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 /**
- * Panel "+ Nueva transacción": registra un perfil nuevo (llave, credenciales
- * del WS, defaults del sobre y del mensaje de negocio) y lo agrega a
+ * Panel "+ Nueva transacción": registra un perfil nuevo (defaults del sobre y del mensaje
+ * de negocio; la llave y las credenciales son del ambiente, no del perfil) y lo agrega a
  * profiles.json, para no tener que editar el archivo ni el código cada vez
  * que llega una transacción nueva.
  */
@@ -37,9 +36,6 @@ public class NewProfilePanel extends JPanel {
     private final Path archivoPerfiles;
     private final List<Profile> perfiles;
     private final Consumer<Profile> alGuardar;
-    private final String llaveAesDefault;
-    private final String wsseUsernameDefault;
-    private final String wssePasswordDefault;
 
     /** {@code alCancelar} se invoca al pulsar la X de arriba a la derecha: el llamador vuelve a la pantalla principal. */
     public NewProfilePanel(Path archivoPerfiles, List<Profile> perfiles, Consumer<Profile> alGuardar,
@@ -49,14 +45,6 @@ public class NewProfilePanel extends JPanel {
         this.perfiles = perfiles;
         this.alGuardar = alGuardar;
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
-
-        // La llave AES y las credenciales del WS son las mismas para todos los
-        // perfiles existentes; se precargan del primero para no reescribirlas
-        // cada vez que se registra una transacción nueva.
-        Profile referencia = perfiles.isEmpty() ? null : perfiles.get(0);
-        llaveAesDefault = referencia != null && referencia.llaveAes != null ? referencia.llaveAes : "";
-        wsseUsernameDefault = referencia != null && referencia.wsseUsername != null ? referencia.wsseUsername : "";
-        wssePasswordDefault = referencia != null && referencia.wssePassword != null ? referencia.wssePassword : "";
 
         MensajeNegocio.BodyMensaje bodyDefaults = new MensajeNegocio.BodyMensaje();
         MensajeNegocio.HeaderMensaje headerDefaults = new MensajeNegocio.HeaderMensaje();
@@ -108,9 +96,6 @@ public class NewProfilePanel extends JPanel {
         GridBagConstraints gbc = FormFields.gbc();
         int[] fila = {0};
         FormFields.agregarCampo(panel, gbc, fila, campos, "Nombre", "");
-        FormFields.agregarCampoSecreto(panel, gbc, fila, campos, "LlaveAes", llaveAesDefault);
-        FormFields.agregarCampo(panel, gbc, fila, campos, "WsseUsername", wsseUsernameDefault);
-        FormFields.agregarCampoSecreto(panel, gbc, fila, campos, "WssePassword", wssePasswordDefault);
         FormFields.agregarSeccion(panel, gbc, fila, "Datos del sobre (_header)");
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdCliente", "");
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdTransaccion (sobre)", "");
@@ -166,7 +151,6 @@ public class NewProfilePanel extends JPanel {
     private void guardar() {
         try {
             String nombre = campos.get("Nombre").getText().trim();
-            String llaveAes = campos.get("LlaveAes").getText().trim();
 
             if (nombre.isEmpty()) {
                 mostrarError("El nombre no puede quedar vacío.");
@@ -178,7 +162,6 @@ public class NewProfilePanel extends JPanel {
                     return;
                 }
             }
-            AES256CBC.validarLlave(llaveAes);
 
             boolean clienteOk = FormFields.esEnteroValido(campos.get("IdCliente"));
             boolean transaccionOk = FormFields.esEnteroValido(campos.get("IdTransaccion (sobre)"));
@@ -192,12 +175,10 @@ public class NewProfilePanel extends JPanel {
 
             Profile perfil = new Profile();
             perfil.nombre = nombre;
-            perfil.llaveAes = llaveAes;
+            // La llave AES y las credenciales del WS ya no van en el perfil: son de cada ambiente (ver Entornos).
             perfil.idClienteDefault = idCliente;
             perfil.idTransaccionDefault = idTransaccionSobre;
             perfil.ipClienteDefault = campos.get("IpCliente").getText().trim();
-            perfil.wsseUsername = campos.get("WsseUsername").getText();
-            perfil.wssePassword = campos.get("WssePassword").getText();
 
             MensajeNegocio.BodyMensaje body = new MensajeNegocio.BodyMensaje();
             body.autorizacion = tablaMensaje.obtener("Autorizacion");
@@ -261,9 +242,6 @@ public class NewProfilePanel extends JPanel {
         for (Map.Entry<String, JTextField> entrada : campos.entrySet()) {
             entrada.getValue().setText("");
         }
-        campos.get("LlaveAes").setText(llaveAesDefault);
-        campos.get("WsseUsername").setText(wsseUsernameDefault);
-        campos.get("WssePassword").setText(wssePasswordDefault);
         campos.get("IpCliente").setText("172.17.0.4");
         tablaMensaje.restablecer();
         statusBanner.ocultar();

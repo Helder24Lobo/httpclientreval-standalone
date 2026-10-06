@@ -4,6 +4,7 @@ import com.example.httpclientreval.crypto.AES256CBC;
 import com.example.httpclientreval.model.Envelope;
 import com.example.httpclientreval.model.EnvioRegistrado;
 import com.example.httpclientreval.model.MensajeNegocio;
+import com.example.httpclientreval.model.Credenciales;
 import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.model.SoapHttpClient;
 import com.example.httpclientreval.model.SoapRequestBuilder;
@@ -57,6 +58,8 @@ public class EncryptPanel extends JPanel {
     private MensajeNegocio.BodyMensaje bodyDefaults;
     private MensajeNegocio.HeaderMensaje headerDefaults;
     private String ultimoSoapGenerado;
+    /** Ambiente (firma) con el que se cifró y firmó la petición generada: si cambia antes de enviar, ya no sirve. */
+    private String firmaEntornoGenerado;
     private JButton botonEnviar;
 
     /** Escribe la lista completa de perfiles en profiles.json. */
@@ -231,14 +234,15 @@ public class EncryptPanel extends JPanel {
             String ipCliente = campos.get("IpCliente").getText().trim();
 
             String jsonNegocio = MensajeNegocio.build(leerBody(), leerHeader());
-            String mensajeCifrado = AES256CBC.encryptWithRandomIV(jsonNegocio, perfil.llaveAes);
+            String mensajeCifrado = AES256CBC.encryptWithRandomIV(jsonNegocio, Credenciales.llave(perfil));
             String sobreCompleto = Envelope.build(mensajeCifrado, idCliente, idTransaccion, ipCliente);
-            String soapCompleto = SoapRequestBuilder.build(perfil.wsseUsername, perfil.wssePassword, sobreCompleto);
+            String soapCompleto = SoapRequestBuilder.build(Credenciales.usuario(perfil), Credenciales.password(perfil), sobreCompleto);
 
             salidaMensaje.setTexto(mensajeCifrado);
             salidaSobre.setTexto(sobreCompleto);
             salidaSoap.setTexto(soapCompleto);
             ultimoSoapGenerado = soapCompleto;
+            firmaEntornoGenerado = SoapHttpClient.entornoActivo().firma();
             statusBanner.mostrarExito("Petición SOAP generada correctamente.");
         } catch (NumberFormatException ex) {
             mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros válidos.");
@@ -344,6 +348,12 @@ public class EncryptPanel extends JPanel {
     private void enviarAlWs() {
         if (ultimoSoapGenerado == null) {
             mostrarError("Primero presiona Generar.");
+            return;
+        }
+        if (!SoapHttpClient.entornoActivo().firma().equals(firmaEntornoGenerado)) {
+            ultimoSoapGenerado = null;
+            mostrarError("El ambiente cambió desde que generaste la petición (va cifrada con las credenciales del "
+                    + "ambiente anterior). Presiona Generar de nuevo.");
             return;
         }
         if (!ConfirmarEnvioProduccion.confirmar(this, perfil.nombre)) {

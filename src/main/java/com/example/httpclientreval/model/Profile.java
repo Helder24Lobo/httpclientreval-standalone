@@ -1,5 +1,6 @@
 package com.example.httpclientreval.model;
 
+import com.example.httpclientreval.util.ArchivoAtomico;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.annotations.SerializedName;
@@ -7,10 +8,8 @@ import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.List;
 
 /**
@@ -86,28 +85,7 @@ public class Profile {
      */
     public static void saveAll(Path archivo, List<Profile> perfiles) throws IOException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        String json = gson.toJson(perfiles);
-
-        Path directorio = archivo.toAbsolutePath().getParent();
-        // La carpeta de usuario puede no existir todavía (primer arranque).
-        Files.createDirectories(directorio);
-        Path temporal = Files.createTempFile(directorio, archivo.getFileName().toString(), ".tmp");
-        try {
-            Files.writeString(temporal, json);
-            try {
-                // ATOMIC_MOVE: en el mismo volumen, el sistema operativo hace el reemplazo como una
-                // sola operación (rename), así que nunca queda un profiles.json a medias.
-                Files.move(temporal, archivo, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-            } catch (AtomicMoveNotSupportedException noAtomico) {
-                // Algunos sistemas de archivos no soportan el movimiento atómico (ej. red, FAT32);
-                // se hace el reemplazo igual, aunque ya sin esa garantía.
-                Files.move(temporal, archivo, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } finally {
-            // No-op si el move ya tuvo éxito (el temporal ya no existe con ese nombre); limpia el
-            // archivo temporal si algo falló antes de llegar al move.
-            Files.deleteIfExists(temporal);
-        }
+        ArchivoAtomico.escribir(archivo, gson.toJson(perfiles));
     }
 
     public static final String GRUPO_SIN_NOMBRE = "Otros";

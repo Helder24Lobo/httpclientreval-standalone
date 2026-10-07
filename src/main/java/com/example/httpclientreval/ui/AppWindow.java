@@ -14,6 +14,7 @@ import javax.swing.JLabel;
 import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.SwingWorker;
 import java.awt.BorderLayout;
@@ -22,6 +23,7 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.IOException;
@@ -397,19 +399,62 @@ public class AppWindow extends JFrame {
             return;
         }
 
-        Object entrada = JOptionPane.showInputDialog(this,
-                "Nuevo nombre (formato \"Grupo - Transacción\"):",
-                "Renombrar perfil", JOptionPane.PLAIN_MESSAGE, null, null, seleccionado.nombre);
-        if (entrada == null) {
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(4, 4, 4, 4);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel lblGrupo = new JLabel("Grupo:");
+        JComboBox<String> comboRenombrarGrupo = new JComboBox<>();
+        comboRenombrarGrupo.setEditable(true);
+        Set<String> grupos = new LinkedHashSet<>();
+        for (Profile p : perfiles) {
+            grupos.add(p.grupo());
+        }
+        for (String g : grupos) {
+            comboRenombrarGrupo.addItem(g);
+        }
+        comboRenombrarGrupo.setSelectedItem(seleccionado.grupo());
+
+        JLabel lblTransaccion = new JLabel("Transacción:");
+        JTextField campoTransaccion = new JTextField(seleccionado.detalle(), 22);
+
+        Accesibilidad.etiquetar(lblGrupo, comboRenombrarGrupo, "Grupo");
+        Accesibilidad.etiquetar(lblTransaccion, campoTransaccion, "Transacción");
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        panel.add(lblGrupo, gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        panel.add(comboRenombrarGrupo, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        panel.add(lblTransaccion, gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        panel.add(campoTransaccion, gbc);
+
+        int opcion = JOptionPane.showConfirmDialog(this, panel, "Renombrar perfil",
+                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (opcion != JOptionPane.OK_OPTION) {
             return;
         }
 
-        String nuevoNombre = ((String) entrada).trim();
-        if (nuevoNombre.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "El nombre no puede quedar vacío.",
+        String grupo = comboRenombrarGrupo.getEditor().getItem() != null
+                ? comboRenombrarGrupo.getEditor().getItem().toString().trim() : "";
+        String detalle = campoTransaccion.getText().trim();
+
+        if (grupo.isEmpty() || detalle.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "El grupo y el nombre de la transacción no pueden quedar vacíos.",
                     "Renombrar perfil", JOptionPane.WARNING_MESSAGE);
             return;
         }
+
+        String nuevoNombre = grupo + " - " + detalle;
         if (nuevoNombre.equals(seleccionado.nombre)) {
             return;
         }

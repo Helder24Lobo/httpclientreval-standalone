@@ -6,6 +6,7 @@ import com.formdev.flatlaf.FlatClientProperties;
 
 import javax.swing.BorderFactory;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
@@ -13,13 +14,16 @@ import javax.swing.JTabbedPane;
 import javax.swing.JTextField;
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Component;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -30,6 +34,7 @@ import java.util.function.Consumer;
  */
 public class NewProfilePanel extends JPanel {
 
+    private final JComboBox<String> comboGrupo = new JComboBox<>();
     private final Map<String, JTextField> campos = new LinkedHashMap<>();
     private final StatusBanner statusBanner = new StatusBanner();
     private TablaClaveValor tablaMensaje;
@@ -95,7 +100,41 @@ public class NewProfilePanel extends JPanel {
         JPanel panel = new JPanel(new GridBagLayout());
         GridBagConstraints gbc = FormFields.gbc();
         int[] fila = {0};
-        FormFields.agregarCampo(panel, gbc, fila, campos, "Nombre", "");
+
+        gbc.gridx = 0;
+        gbc.gridy = fila[0]++;
+        gbc.weightx = 0;
+        JLabel rotuloGrupo = new JLabel("Grupo:");
+        panel.add(rotuloGrupo, gbc);
+
+        comboGrupo.setEditable(true);
+        comboGrupo.removeAllItems();
+        Set<String> grupos = new LinkedHashSet<>();
+        for (Profile p : perfiles) {
+            grupos.add(p.grupo());
+        }
+        for (String g : grupos) {
+            comboGrupo.addItem(g);
+        }
+        if (comboGrupo.getItemCount() > 0) {
+            comboGrupo.setSelectedIndex(0);
+        }
+        comboGrupo.setToolTipText("Selecciona un grupo existente o escribe uno nuevo");
+        Accesibilidad.etiquetar(rotuloGrupo, comboGrupo, "Grupo");
+        Component editor = comboGrupo.getEditor().getEditorComponent();
+        if (editor instanceof JTextField tf) {
+            tf.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Selecciona o escribe un grupo...");
+        }
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        panel.add(comboGrupo, gbc);
+
+        FormFields.agregarCampo(panel, gbc, fila, campos, "Transacción", "");
+        JTextField campoTransaccion = campos.get("Transacción");
+        if (campoTransaccion != null) {
+            campoTransaccion.putClientProperty(FlatClientProperties.PLACEHOLDER_TEXT, "Nombre de la transacción");
+        }
+
         FormFields.agregarSeccion(panel, gbc, fila, "Datos del sobre (_header)");
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdCliente", "");
         FormFields.agregarCampo(panel, gbc, fila, campos, "IdTransaccion (sobre)", "");
@@ -150,12 +189,20 @@ public class NewProfilePanel extends JPanel {
 
     private void guardar() {
         try {
-            String nombre = campos.get("Nombre").getText().trim();
+            String grupo = comboGrupo.getEditor().getItem() != null
+                    ? comboGrupo.getEditor().getItem().toString().trim() : "";
+            String transaccion = campos.get("Transacción").getText().trim();
 
-            if (nombre.isEmpty()) {
-                mostrarError("El nombre no puede quedar vacío.");
+            if (grupo.isEmpty()) {
+                mostrarError("El grupo no puede quedar vacío.");
                 return;
             }
+            if (transaccion.isEmpty()) {
+                mostrarError("El nombre de la transacción no puede quedar vacío.");
+                return;
+            }
+
+            String nombre = grupo + " - " + transaccion;
             for (Profile existente : perfiles) {
                 if (existente.nombre.equalsIgnoreCase(nombre)) {
                     mostrarError("Ya existe un perfil con ese nombre.");
@@ -219,6 +266,17 @@ public class NewProfilePanel extends JPanel {
             perfiles.add(perfil);
             Profile.saveAll(archivoPerfiles, perfiles);
 
+            boolean grupoEnCombo = false;
+            for (int i = 0; i < comboGrupo.getItemCount(); i++) {
+                if (grupo.equalsIgnoreCase(comboGrupo.getItemAt(i))) {
+                    grupoEnCombo = true;
+                    break;
+                }
+            }
+            if (!grupoEnCombo) {
+                comboGrupo.addItem(grupo);
+            }
+
             mostrarExito("Perfil \"" + nombre + "\" guardado correctamente.");
             alGuardar.accept(perfil);
         } catch (NumberFormatException ex) {
@@ -241,6 +299,11 @@ public class NewProfilePanel extends JPanel {
     private void limpiarCampos() {
         for (Map.Entry<String, JTextField> entrada : campos.entrySet()) {
             entrada.getValue().setText("");
+        }
+        if (comboGrupo.getItemCount() > 0) {
+            comboGrupo.setSelectedIndex(0);
+        } else {
+            comboGrupo.getEditor().setItem("");
         }
         campos.get("IpCliente").setText("172.17.0.4");
         tablaMensaje.restablecer();

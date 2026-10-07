@@ -1,5 +1,6 @@
 package com.example.httpclientreval.model;
 
+import javax.net.ssl.SSLHandshakeException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -142,11 +143,32 @@ public class SoapHttpClient {
                 .build();
 
         long inicio = System.currentTimeMillis();
-        HttpResponse<String> response = clienteParaTimeout(entorno.timeoutSegundos)
-                .send(request, HttpResponse.BodyHandlers.ofString());
+        HttpResponse<String> response = enviarConReintento(clienteParaTimeout(entorno.timeoutSegundos), request);
         long tiempoMs = System.currentTimeMillis() - inicio;
 
         return new Respuesta(response.statusCode(), response.body(), tiempoMs);
+    }
+
+    private static final int INTENTOS_HANDSHAKE = 3;
+    private static final long ESPERA_ENTRE_INTENTOS_MS = 400;
+
+    /**
+     * El servidor corta de vez en cuando el handshake TLS ("Remote host terminated the handshake"). Eso pasa
+     * antes de que se envíe la petición, así que repetir es seguro (no puede duplicar una transacción); solo
+     * se reintenta ese error, cualquier otro falla de inmediato.
+     */
+    private static HttpResponse<String> enviarConReintento(HttpClient cliente, HttpRequest request)
+            throws IOException, InterruptedException {
+        for (int intento = 1; ; intento++) {
+            try {
+                return cliente.send(request, HttpResponse.BodyHandlers.ofString());
+            } catch (SSLHandshakeException e) {
+                if (intento >= INTENTOS_HANDSHAKE) {
+                    throw e;
+                }
+                Thread.sleep(ESPERA_ENTRE_INTENTOS_MS);
+            }
+        }
     }
 
     /**

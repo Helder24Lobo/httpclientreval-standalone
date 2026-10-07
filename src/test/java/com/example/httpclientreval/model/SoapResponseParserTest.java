@@ -46,4 +46,11 @@ class SoapResponseParserTest {
     void extraerObjRequestResult_devuelveNullSiXmlInvalido() {
         assertNull(SoapResponseParser.extraerObjRequestResult("esto no es XML"));
     }
+
+    @Test
+    void extraerObjRequestResult_devuelveNullSiXmlNullOVacio() {
+        assertNull(SoapResponseParser.extraerObjRequestResult(null));
+        assertNull(SoapResponseParser.extraerObjRequestResult(""));
+        assertNull(SoapResponseParser.extraerObjRequestResult("   "));
+    }
 }

@@ -5,8 +5,10 @@ import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.ui.AppWindow;
 import com.example.httpclientreval.ui.ArranqueDePerfiles;
 import com.example.httpclientreval.ui.TemaPreferencias;
+import com.example.httpclientreval.util.Registro;
 import com.example.httpclientreval.util.RutasApp;
 
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import java.nio.file.Path;
 import java.util.List;
@@ -25,14 +27,27 @@ import java.util.concurrent.atomic.AtomicReference;
 public class Main {
 
     public static void main(String[] args) throws Exception {
+        // Manejador global para cualquier error imprevisto (EDT o hilos secundarios)
+        Thread.setDefaultUncaughtExceptionHandler((hilo, error) -> {
+            Registro.error("Error no controlado en el hilo " + hilo.getName(), error);
+            SwingUtilities.invokeLater(() -> {
+                String mensaje = error.getMessage() != null && !error.getMessage().isBlank()
+                        ? error.getMessage() : error.getClass().getSimpleName();
+                JOptionPane.showMessageDialog(null,
+                        "Ocurrió un error inesperado:\n" + mensaje + "\n\nPuedes consultar los detalles en:\n"
+                                + RutasApp.archivoLog().toAbsolutePath(),
+                        "Error inesperado", JOptionPane.ERROR_MESSAGE);
+            });
+        });
+
         TemaPreferencias.instalar();
 
         Path archivoPerfiles = RutasApp.archivoPerfiles();
         AtomicReference<List<Profile>> cargados = new AtomicReference<>();
         SwingUtilities.invokeAndWait(() -> cargados.set(ArranqueDePerfiles.cargarOCrear(archivoPerfiles)));
         List<Profile> perfiles = cargados.get();
-        if (perfiles == null) {
-            System.exit(0); // el usuario eligió salir en el diálogo de arranque
+        if (perfiles == null || perfiles.isEmpty()) {
+            System.exit(0); // el usuario eligió salir en el diálogo de arranque o no hay perfiles
         }
         // Los ambientes base (Pruebas y Producción) heredan las credenciales de los perfiles la primera vez.
         Entornos.inicializar(perfiles);

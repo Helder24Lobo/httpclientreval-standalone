@@ -41,4 +41,20 @@ class AES256CBCTest {
     void llaveNull_lanzaExcepcion() {
         assertThrows(IllegalArgumentException.class, () -> AES256CBC.validarLlave(null));
     }
+
+    @Test
+    void encryptConTextoNull_lanzaExcepcion() {
+        assertThrows(IllegalArgumentException.class, () -> AES256CBC.encryptWithRandomIV(null, LLAVE_32_BYTES));
+    }
+
+    @Test
+    void decryptConTextoVacioONull_lanzaExcepcion() {
+        assertThrows(IllegalArgumentException.class, () -> AES256CBC.decryptWithPrependedIV(null, LLAVE_32_BYTES));
+        assertThrows(IllegalArgumentException.class, () -> AES256CBC.decryptWithPrependedIV("   ", LLAVE_32_BYTES));
+    }
+
+    @Test
+    void decryptConBase64Invalido_lanzaExcepcion() {
+        assertThrows(IllegalArgumentException.class, () -> AES256CBC.decryptWithPrependedIV("!no_base64!", LLAVE_32_BYTES));
+    }
 }

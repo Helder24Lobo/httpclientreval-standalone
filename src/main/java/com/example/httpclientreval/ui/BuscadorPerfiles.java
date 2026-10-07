@@ -153,6 +153,9 @@ final class BuscadorPerfiles extends JDialog {
 
         List<Profile> coincidencias = new ArrayList<>();
         for (Profile p : perfiles) {
+            if (p == null || p.nombre == null) {
+                continue;
+            }
             if (soloFavoritos.isSelected() && !favoritos.contains(p.nombre)) {
                 continue;
             }
@@ -180,6 +183,9 @@ final class BuscadorPerfiles extends JDialog {
     }
 
     private static int rango(Profile p, List<String> favoritos, List<String> recientes) {
+        if (p == null || p.nombre == null) {
+            return 1 + PerfilesPreferencias.MAX_RECIENTES;
+        }
         if (favoritos.contains(p.nombre)) {
             return 0;
         }
@@ -188,6 +194,9 @@ final class BuscadorPerfiles extends JDialog {
     }
 
     private static String normalizar(String texto) {
+        if (texto == null) {
+            return "";
+        }
         return Normalizer.normalize(texto, Normalizer.Form.NFD).replaceAll("\\p{M}", "").toLowerCase(Locale.ROOT);
     }
 
@@ -202,7 +211,7 @@ final class BuscadorPerfiles extends JDialog {
 
     private void alternarFavorito() {
         Profile seleccionado = lista.getSelectedValue();
-        if (seleccionado == null) {
+        if (seleccionado == null || seleccionado.nombre == null) {
             return;
         }
         preferencias.alternarFavorito(seleccionado.nombre);

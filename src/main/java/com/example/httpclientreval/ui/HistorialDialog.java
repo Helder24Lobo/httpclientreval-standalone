@@ -337,7 +337,7 @@ final class HistorialDialog extends JDialog {
             }
             EnvioRegistrado candidato = envios.get(i);
             otros.add(candidato);
-            if (porDefecto == null && i > indice && candidato.perfilNombre.equals(seleccionado.perfilNombre)) {
+            if (porDefecto == null && i > indice && java.util.Objects.equals(candidato.perfilNombre, seleccionado.perfilNombre)) {
                 porDefecto = candidato;
             }
         }
@@ -443,7 +443,10 @@ final class HistorialDialog extends JDialog {
                     seleccionar(nuevo);
                 } catch (Exception ex) {
                     Registro.error("No se pudo reenviar la petición de " + original.perfilNombre, ex);
-                    JOptionPane.showMessageDialog(HistorialDialog.this, "No se pudo reenviar: " + ex.getMessage(),
+                    Throwable causa = ex.getCause() != null ? ex.getCause() : ex;
+                    String detalle = causa.getMessage() != null && !causa.getMessage().isBlank()
+                            ? causa.getMessage() : causa.getClass().getSimpleName();
+                    JOptionPane.showMessageDialog(HistorialDialog.this, "No se pudo reenviar: " + detalle,
                             "Error", JOptionPane.ERROR_MESSAGE);
                 }
             }

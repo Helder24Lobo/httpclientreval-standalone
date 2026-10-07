@@ -23,18 +23,18 @@ public final class Credenciales {
     }
 
     public static String llave(Profile perfil, Entorno entorno) {
-        return elegir(entorno.llaveAes, perfil.llaveAes);
+        return elegir(entorno != null ? entorno.llaveAes : null, perfil != null ? perfil.llaveAes : null);
     }
 
     public static String usuario(Profile perfil, Entorno entorno) {
-        return elegir(entorno.wsseUsername, perfil.wsseUsername);
+        return elegir(entorno != null ? entorno.wsseUsername : null, perfil != null ? perfil.wsseUsername : null);
     }
 
     public static String password(Profile perfil, Entorno entorno) {
-        return elegir(entorno.wssePassword, perfil.wssePassword);
+        return elegir(entorno != null ? entorno.wssePassword : null, perfil != null ? perfil.wssePassword : null);
     }
 
     private static String elegir(String delEntorno, String delPerfil) {
-        return Entorno.esVacio(delEntorno) ? delPerfil : delEntorno;
+        return Entorno.esVacio(delEntorno) ? (delPerfil == null ? "" : delPerfil) : delEntorno;
     }
 }

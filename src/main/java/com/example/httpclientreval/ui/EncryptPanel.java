@@ -69,12 +69,12 @@ public class EncryptPanel extends JPanel {
 
     public EncryptPanel(Profile perfil, Persistidor persistidor) {
         super(new BorderLayout(8, 8));
-        this.perfil = perfil;
+        this.perfil = perfil != null ? perfil : new Profile();
         this.persistidor = persistidor;
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
-        bodyDefaults = perfil.bodyMensajeDefault != null ? perfil.bodyMensajeDefault : new MensajeNegocio.BodyMensaje();
-        headerDefaults = perfil.headerMensajeDefault != null ? perfil.headerMensajeDefault : new MensajeNegocio.HeaderMensaje();
+        bodyDefaults = this.perfil.bodyMensajeDefault != null ? this.perfil.bodyMensajeDefault : new MensajeNegocio.BodyMensaje();
+        headerDefaults = this.perfil.headerMensajeDefault != null ? this.perfil.headerMensajeDefault : new MensajeNegocio.HeaderMensaje();
 
         JTabbedPane tabsEntrada = new JTabbedPane();
         Accesibilidad.nombrar(tabsEntrada, "Datos de la petición");
@@ -247,8 +247,11 @@ public class EncryptPanel extends JPanel {
         } catch (NumberFormatException ex) {
             mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros válidos.");
         } catch (Exception ex) {
-            Registro.error("Error al generar la petición del perfil " + perfil.nombre, ex);
-            mostrarError("Error: " + ex.getMessage());
+            String nombre = perfil != null && perfil.nombre != null ? perfil.nombre : "desconocido";
+            Registro.error("Error al generar la petición del perfil " + nombre, ex);
+            String detalle = ex.getMessage() != null && !ex.getMessage().isBlank()
+                    ? ex.getMessage() : ex.getClass().getSimpleName();
+            mostrarError("Error: " + detalle);
         }
     }
 

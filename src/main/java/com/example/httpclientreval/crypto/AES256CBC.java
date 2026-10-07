@@ -47,6 +47,9 @@ public class AES256CBC {
      * y devuelve Base64( IV + cipherText ), tal como espera el campo "_mensaje".
      */
     public static String encryptWithRandomIV(String plainText, String llave) throws Exception {
+        if (plainText == null) {
+            throw new IllegalArgumentException("El texto a cifrar no puede ser null.");
+        }
         validarLlave(llave);
 
         byte[] keyBytes = llave.getBytes(StandardCharsets.UTF_8);
@@ -72,10 +75,18 @@ public class AES256CBC {
      * el texto plano (JSON de negocio).
      */
     public static String decryptWithPrependedIV(String base64Data, String llave) throws Exception {
+        if (base64Data == null || base64Data.isBlank()) {
+            throw new IllegalArgumentException("El texto cifrado en Base64 no puede estar vacío.");
+        }
         validarLlave(llave);
 
         byte[] keyBytes = llave.getBytes(StandardCharsets.UTF_8);
-        byte[] combined = Base64.getDecoder().decode(base64Data);
+        byte[] combined;
+        try {
+            combined = Base64.getDecoder().decode(base64Data.trim());
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException("El texto proporcionado no es un Base64 válido.", e);
+        }
 
         if (combined.length <= IV_LENGTH_BYTES) {
             throw new IllegalArgumentException(

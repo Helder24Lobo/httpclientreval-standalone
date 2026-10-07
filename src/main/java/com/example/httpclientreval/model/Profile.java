@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -74,7 +75,19 @@ public class Profile {
         if (perfiles == null || perfiles.isEmpty()) {
             throw new IllegalStateException(origen + " no tiene perfiles definidos.");
         }
-        return perfiles;
+        List<Profile> filtrados = new ArrayList<>();
+        for (Profile p : perfiles) {
+            if (p != null) {
+                if (p.nombre == null || p.nombre.isBlank()) {
+                    p.nombre = "Transaccion sin nombre";
+                }
+                filtrados.add(p);
+            }
+        }
+        if (filtrados.isEmpty()) {
+            throw new IllegalStateException(origen + " no tiene perfiles válidos definidos.");
+        }
+        return filtrados;
     }
 
     /**

@@ -52,10 +52,11 @@ public class EnvioRegistrado {
     private EnvioRegistrado(LocalDateTime hora, Profile perfil, String soapEnviado, Integer statusCode, long tiempoMs,
                             String cuerpo, String errorEnvio, String resultadoCifrado, String resultadoPlano,
                             String errorDescifrado, Integer codigoNegocio, String mensajeNegocio) {
-        this.hora = hora;
+        this.hora = hora != null ? hora : LocalDateTime.now();
         this.perfil = perfil;
-        this.perfilNombre = perfil.nombre;
-        this.entornoNombre = SoapHttpClient.entornoActivo().nombre;
+        this.perfilNombre = perfil != null && perfil.nombre != null ? perfil.nombre : "Sin nombre";
+        Entorno entornoActivo = SoapHttpClient.entornoActivo();
+        this.entornoNombre = entornoActivo != null && entornoActivo.nombre != null ? entornoActivo.nombre : "Desconocido";
         this.soapEnviado = soapEnviado;
         this.statusCode = statusCode;
         this.tiempoMs = tiempoMs;
@@ -82,14 +83,15 @@ public class EnvioRegistrado {
             Thread.currentThread().interrupt();
             return fallido(hora, perfil, soapXml, e, System.currentTimeMillis() - inicio);
         } catch (Exception e) {
-            Registro.advertencia("Envío a " + perfil.nombre + " sin respuesta", e);
+            String nombre = perfil != null && perfil.nombre != null ? perfil.nombre : "desconocido";
+            Registro.advertencia("Envío a " + nombre + " sin respuesta", e);
             return fallido(hora, perfil, soapXml, e, System.currentTimeMillis() - inicio);
         }
     }
 
     /** Analiza una respuesta ya recibida: extrae y descifra OBJRequestResult y lee el código de negocio. */
     static EnvioRegistrado desde(LocalDateTime hora, Profile perfil, String soapXml, SoapHttpClient.Respuesta respuesta) {
-        String cifrado = SoapResponseParser.extraerObjRequestResult(respuesta.cuerpo);
+        String cifrado = SoapResponseParser.extraerObjRequestResult(respuesta != null ? respuesta.cuerpo : null);
         String plano = null;
         String errorDescifrado = null;
         Integer codigo = null;
@@ -102,16 +104,24 @@ public class EnvioRegistrado {
                 codigo = negocio.codigo;
                 mensaje = negocio.mensaje;
             } catch (Exception e) {
-                errorDescifrado = e.getMessage();
-                Registro.advertencia("No se pudo descifrar OBJRequestResult del perfil " + perfil.nombre, e);
+                errorDescifrado = e.getMessage() != null && !e.getMessage().isBlank()
+                        ? e.getMessage() : e.getClass().getSimpleName();
+                String nombre = perfil != null && perfil.nombre != null ? perfil.nombre : "desconocido";
+                Registro.advertencia("No se pudo descifrar OBJRequestResult del perfil " + nombre, e);
             }
         }
-        return new EnvioRegistrado(hora, perfil, soapXml, respuesta.statusCode, respuesta.tiempoMs, respuesta.cuerpo,
+        int status = respuesta != null ? respuesta.statusCode : 0;
+        long tiempo = respuesta != null ? respuesta.tiempoMs : 0;
+        String cuerpo = respuesta != null ? respuesta.cuerpo : null;
+        return new EnvioRegistrado(hora, perfil, soapXml, status, tiempo, cuerpo,
                 null, cifrado, plano, errorDescifrado, codigo, mensaje);
     }
 
     static EnvioRegistrado fallido(LocalDateTime hora, Profile perfil, String soapXml, Throwable causa, long tiempoMs) {
-        return new EnvioRegistrado(hora, perfil, soapXml, null, tiempoMs, null, String.valueOf(causa.getMessage()),
+        String motivo = causa != null
+                ? (causa.getMessage() != null && !causa.getMessage().isBlank() ? causa.getMessage() : causa.getClass().getSimpleName())
+                : "Error desconocido";
+        return new EnvioRegistrado(hora, perfil, soapXml, null, tiempoMs, null, motivo,
                 null, null, null, null, null);
     }
 

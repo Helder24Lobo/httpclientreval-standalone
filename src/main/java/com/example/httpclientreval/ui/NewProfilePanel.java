@@ -2,6 +2,7 @@ package com.example.httpclientreval.ui;
 
 import com.example.httpclientreval.model.MensajeNegocio;
 import com.example.httpclientreval.model.Profile;
+import com.example.httpclientreval.util.Registro;
 import com.formdev.flatlaf.FlatClientProperties;
 
 import javax.swing.BorderFactory;
@@ -264,7 +265,15 @@ public class NewProfilePanel extends JPanel {
             perfil.headerMensajeDefault = header;
 
             perfiles.add(perfil);
-            Profile.saveAll(archivoPerfiles, perfiles);
+            try {
+                Profile.saveAll(archivoPerfiles, perfiles);
+            } catch (Exception ex) {
+                perfiles.remove(perfil);
+                Registro.error("No se pudo guardar profiles.json al crear el perfil " + nombre, ex);
+                String detalle = ex.getMessage() != null && !ex.getMessage().isBlank() ? ex.getMessage() : ex.getClass().getSimpleName();
+                mostrarError("No se pudo guardar profiles.json: " + detalle);
+                return;
+            }
 
             boolean grupoEnCombo = false;
             for (int i = 0; i < comboGrupo.getItemCount(); i++) {
@@ -282,9 +291,11 @@ public class NewProfilePanel extends JPanel {
         } catch (NumberFormatException ex) {
             mostrarError("IdCliente e IdTransaccion (sobre) deben ser números enteros.");
         } catch (IllegalArgumentException ex) {
-            mostrarError(ex.getMessage());
-        } catch (IOException ex) {
-            mostrarError("No se pudo guardar profiles.json: " + ex.getMessage());
+            mostrarError(ex.getMessage() != null ? ex.getMessage() : "Datos inválidos.");
+        } catch (Exception ex) {
+            Registro.error("Error inesperado al guardar la nueva transacción", ex);
+            String detalle = ex.getMessage() != null && !ex.getMessage().isBlank() ? ex.getMessage() : ex.getClass().getSimpleName();
+            mostrarError("Error inesperado: " + detalle);
         }
     }
 

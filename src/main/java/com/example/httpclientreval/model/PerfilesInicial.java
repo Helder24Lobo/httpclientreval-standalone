@@ -59,11 +59,13 @@ public final class PerfilesInicial {
         List<Profile> resultado = new ArrayList<>(esLegible(destino) ? Profile.loadAll(destino) : List.of());
         Set<String> nombres = new HashSet<>();
         for (Profile p : resultado) {
-            nombres.add(clave(p));
+            if (p != null) {
+                nombres.add(clave(p));
+            }
         }
         int agregados = 0;
         for (Profile p : Profile.loadAll(origen)) {
-            if (nombres.add(clave(p))) {
+            if (p != null && nombres.add(clave(p))) {
                 resultado.add(p);
                 agregados++;
             }
@@ -73,7 +75,7 @@ public final class PerfilesInicial {
     }
 
     private static String clave(Profile p) {
-        return p.nombre == null ? "" : p.nombre.trim();
+        return p == null || p.nombre == null ? "" : p.nombre.trim();
     }
 
     /**
@@ -86,7 +88,7 @@ public final class PerfilesInicial {
         return Files.move(archivo, destino);
     }
 
-    static List<Profile> perfilesDeEjemplo() {
+    public static List<Profile> perfilesDeEjemplo() {
         try (InputStream in = PerfilesInicial.class.getResourceAsStream(RECURSO_EJEMPLO)) {
             if (in != null) {
                 return Profile.fromJson(new String(in.readAllBytes(), StandardCharsets.UTF_8), RECURSO_EJEMPLO);

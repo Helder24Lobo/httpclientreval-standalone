@@ -99,11 +99,28 @@ final class ImportarExportarPerfiles {
             return null;
         }
 
+        List<Profile> candidatosValidos = new ArrayList<>();
+        if (encontrados != null) {
+            for (Profile p : encontrados) {
+                if (p != null) {
+                    if (p.nombre == null || p.nombre.isBlank()) {
+                        p.nombre = "Perfil sin nombre";
+                    }
+                    candidatosValidos.add(p);
+                }
+            }
+        }
+        if (candidatosValidos.isEmpty()) {
+            JOptionPane.showMessageDialog(padre, "El archivo no contiene perfiles válidos para importar.",
+                    "Importar perfiles", JOptionPane.WARNING_MESSAGE);
+            return null;
+        }
+
         // Nombres que resultarían si se importan TODOS, en orden: así la casilla ya muestra de una vez
         // con qué nombre quedaría cada uno si hay choques (incluso entre sí, no solo contra los actuales).
         List<Profile> simulacion = new ArrayList<>(perfiles);
         java.util.Map<Profile, String> nombreResuelto = new java.util.HashMap<>();
-        for (Profile candidato : encontrados) {
+        for (Profile candidato : candidatosValidos) {
             String resuelto = nombreDisponible(simulacion, candidato.nombre);
             nombreResuelto.put(candidato, resuelto);
             Profile marcador = new Profile();
@@ -111,7 +128,7 @@ final class ImportarExportarPerfiles {
             simulacion.add(marcador);
         }
 
-        List<Profile> elegidos = elegirPerfiles(padre, "Importar perfiles", encontrados,
+        List<Profile> elegidos = elegirPerfiles(padre, "Importar perfiles", candidatosValidos,
                 p -> nombreResuelto.get(p).equals(p.nombre) ? p.nombre : p.nombre + "  →  " + nombreResuelto.get(p),
                 "Un nombre que ya existe se renombra solo (se agrega \"(copia)\"); nada se sobreescribe.");
         if (elegidos == null || elegidos.isEmpty()) {
@@ -192,19 +209,23 @@ final class ImportarExportarPerfiles {
 
     /** Si {@code nombreOriginal} ya existe en {@code existentes}, el primer "... (copia[ N])" que esté libre. */
     private static String nombreDisponible(List<Profile> existentes, String nombreOriginal) {
-        if (!existeNombre(existentes, nombreOriginal)) {
-            return nombreOriginal;
+        String base = nombreOriginal == null || nombreOriginal.isBlank() ? "Perfil" : nombreOriginal.trim();
+        if (!existeNombre(existentes, base)) {
+            return base;
         }
-        String candidato = nombreOriginal + " (copia)";
+        String candidato = base + " (copia)";
         for (int n = 2; existeNombre(existentes, candidato); n++) {
-            candidato = nombreOriginal + " (copia " + n + ")";
+            candidato = base + " (copia " + n + ")";
         }
         return candidato;
     }
 
     private static boolean existeNombre(List<Profile> existentes, String nombre) {
+        if (nombre == null) {
+            return false;
+        }
         for (Profile p : existentes) {
-            if (p.nombre.equalsIgnoreCase(nombre)) {
+            if (p != null && p.nombre != null && p.nombre.equalsIgnoreCase(nombre)) {
                 return true;
             }
         }
@@ -212,12 +233,24 @@ final class ImportarExportarPerfiles {
     }
 
     private static File directorioDe(Path archivoPerfiles) {
+        if (archivoPerfiles == null) {
+            return new File(System.getProperty("user.home", "."));
+        }
         Path directorio = archivoPerfiles.toAbsolutePath().getParent();
-        return directorio == null ? null : directorio.toFile();
+        return directorio != null && java.nio.file.Files.exists(directorio)
+                ? directorio.toFile()
+                : new File(System.getProperty("user.home", "."));
     }
 
     private static Path conExtensionJson(Path archivo) {
-        String nombre = archivo.getFileName().toString();
+        if (archivo == null) {
+            return Path.of("perfiles.json");
+        }
+        Path fileName = archivo.getFileName();
+        if (fileName == null) {
+            return archivo;
+        }
+        String nombre = fileName.toString();
         return nombre.toLowerCase(java.util.Locale.ROOT).endsWith(".json")
                 ? archivo : archivo.resolveSibling(nombre + ".json");
     }

@@ -153,14 +153,22 @@ final class FormFields {
             return false;
         }
         String texto = campo.getText().trim();
-        boolean valido = !texto.isEmpty() && texto.matches("\\d+");
+        boolean valido = false;
+        if (!texto.isEmpty() && texto.matches("\\d+")) {
+            try {
+                Integer.parseInt(texto);
+                valido = true;
+            } catch (NumberFormatException ignored) {
+                valido = false;
+            }
+        }
         if (!valido) {
             Border borderError = BorderFactory.createCompoundBorder(
                     BorderFactory.createLineBorder(new Color(211, 47, 47), 2),
                     BorderFactory.createEmptyBorder(2, 4, 2, 4)
             );
             campo.setBorder(borderError);
-            campo.setToolTipText("Este campo debe ser un número entero (solo dígitos).");
+            campo.setToolTipText("Este campo debe ser un número entero válido.");
         }
         return valido;
     }

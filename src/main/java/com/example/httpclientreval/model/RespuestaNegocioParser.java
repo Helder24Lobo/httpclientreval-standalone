@@ -29,18 +29,34 @@ public class RespuestaNegocioParser {
     }
 
     public static Resultado parsear(String jsonRespuesta) {
+        if (jsonRespuesta == null || jsonRespuesta.isBlank()) {
+            return new Resultado(null, null);
+        }
         try {
-            JsonObject raiz = JsonParser.parseString(jsonRespuesta).getAsJsonObject();
+            com.google.gson.JsonElement elem = JsonParser.parseString(jsonRespuesta);
+            if (elem == null || !elem.isJsonObject()) {
+                return new Resultado(null, null);
+            }
+            JsonObject raiz = elem.getAsJsonObject();
             JsonObject header = null;
-            if (raiz.has("header") && !raiz.get("header").isJsonNull()) {
+            if (raiz.has("header") && !raiz.get("header").isJsonNull() && raiz.get("header").isJsonObject()) {
                 header = raiz.getAsJsonObject("header");
-            } else if (raiz.has("_header") && !raiz.get("_header").isJsonNull()) {
+            } else if (raiz.has("_header") && !raiz.get("_header").isJsonNull() && raiz.get("_header").isJsonObject()) {
                 header = raiz.getAsJsonObject("_header");
             }
 
             if (header != null) {
-                Integer codigo = header.has("Codigo") && !header.get("Codigo").isJsonNull()
-                        ? header.get("Codigo").getAsInt() : null;
+                Integer codigo = null;
+                if (header.has("Codigo") && !header.get("Codigo").isJsonNull()) {
+                    try {
+                        codigo = header.get("Codigo").getAsInt();
+                    } catch (Exception ex) {
+                        try {
+                            codigo = Integer.parseInt(header.get("Codigo").getAsString().trim());
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
                 String mensaje = header.has("Mensaje") && !header.get("Mensaje").isJsonNull()
                         ? header.get("Mensaje").getAsString() : null;
                 return new Resultado(codigo, mensaje);

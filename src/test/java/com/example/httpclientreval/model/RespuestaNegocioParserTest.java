@@ -30,4 +30,21 @@ class RespuestaNegocioParserTest {
     void extraerCodigo_devuelveNullSiJsonInvalido() {
         assertNull(RespuestaNegocioParser.extraerCodigo("no es json"));
     }
+
+    @Test
+    void extraerCodigo_devuelveNullSiJsonNullOVacio() {
+        assertNull(RespuestaNegocioParser.extraerCodigo(null));
+        assertNull(RespuestaNegocioParser.extraerCodigo(""));
+        assertNull(RespuestaNegocioParser.extraerCodigo("   "));
+    }
+
+    @Test
+    void extraerCodigo_devuelveNullSiJsonEsArray() {
+        assertNull(RespuestaNegocioParser.extraerCodigo("[1, 2, 3]"));
+    }
+
+    @Test
+    void extraerCodigo_toleraCodigoComoCadena() {
+        assertEquals(42, RespuestaNegocioParser.extraerCodigo("{\"header\":{\"Codigo\":\"42\",\"Mensaje\":\"OK\"}}"));
+    }
 }

@@ -2,6 +2,7 @@ package com.example.httpclientreval.ui;
 
 import com.example.httpclientreval.model.PerfilesInicial;
 import com.example.httpclientreval.model.Profile;
+import com.example.httpclientreval.util.ArchivoAtomico;
 import com.example.httpclientreval.util.Registro;
 import com.example.httpclientreval.util.RutasApp;
 
@@ -12,6 +13,9 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +53,14 @@ public final class ArranqueDePerfiles {
      */
     private static List<Profile> cargarSinPreguntar(Path archivo) {
         try {
+            if (!Files.exists(archivo)) {
+                // Si alguien borró el archivo (o se perdió), lo último guardado vale más que una migración o un ejemplo.
+                Path respaldo = primerRespaldoLegible(archivo);
+                if (respaldo != null) {
+                    PerfilesInicial.copiar(respaldo, archivo);
+                    Registro.advertencia("Se restauró " + archivo + " desde el respaldo " + respaldo.getFileName(), null);
+                }
+            }
             if (!Files.exists(archivo)) {
                 for (Path anterior : RutasApp.perfilesAnteriores()) {
                     if (PerfilesInicial.esLegible(anterior)) {
@@ -102,11 +114,17 @@ public final class ArranqueDePerfiles {
             Path legado = Paths.get("profiles.json").toAbsolutePath();
             boolean hayLegado = Files.isRegularFile(legado) && !legado.equals(archivo.toAbsolutePath());
 
+            Path respaldo = primerRespaldoLegible(archivo);
+
             List<String> opciones = new ArrayList<>();
+            String restaurar = "Restaurar la última copia de seguridad";
             String copiarLegado = "Combinar con el de la carpeta actual";
             String crearEjemplo = "Crear con perfiles de ejemplo";
             String importar = "Importar de otro archivo...";
             String salir = "Salir";
+            if (respaldo != null) {
+                opciones.add(restaurar);
+            }
             if (hayLegado) {
                 opciones.add(copiarLegado);
             }
@@ -115,6 +133,7 @@ public final class ArranqueDePerfiles {
             opciones.add(salir);
 
             String mensaje = problema + "\n\nUbicación esperada:\n" + archivo.toAbsolutePath()
+                    + (respaldo != null ? "\n\nHay una copia de seguridad del " + fechaDe(respaldo) + " que sí se puede leer." : "")
                     + (hayLegado ? "\n\nEncontré un profiles.json de una versión anterior en:\n" + legado : "")
                     + (existe ? "\n\nSi eliges una opción, el archivo actual se guarda aparte (no se borra)." : "")
                     + (hayLegado || !existe ? "\n\nCombinar e importar suman las transacciones que falten y nunca pisan las que ya tengas." : "");
@@ -127,7 +146,15 @@ public final class ArranqueDePerfiles {
 
             try {
                 String elegida = opciones.get(eleccion);
-                if (elegida.equals(copiarLegado)) {
+                if (elegida.equals(restaurar)) {
+                    apartarSiExiste(archivo);
+                    PerfilesInicial.copiar(respaldo, archivo);
+                    Registro.advertencia("Se restauró " + archivo + " desde el respaldo " + respaldo.getFileName(), null);
+                    JOptionPane.showMessageDialog(propietario,
+                            "Se restauró la copia de seguridad del " + fechaDe(respaldo) + ".\n\n"
+                                    + "Lo guardado después de esa fecha no está en la copia.",
+                            "Perfiles", JOptionPane.INFORMATION_MESSAGE);
+                } else if (elegida.equals(copiarLegado)) {
                     combinarConActual(legado, archivo);
                 } else if (elegida.equals(crearEjemplo)) {
                     apartarSiExiste(archivo);
@@ -169,6 +196,25 @@ public final class ArranqueDePerfiles {
         if (Files.exists(archivo)) {
             Path aparte = PerfilesInicial.apartarCorrupto(archivo);
             Registro.advertencia("Se apartó el archivo de perfiles anterior como " + aparte, null);
+        }
+    }
+
+    /** El respaldo más reciente de {@code archivo} que se pueda leer como perfiles, o {@code null}. */
+    private static Path primerRespaldoLegible(Path archivo) {
+        for (Path respaldo : ArchivoAtomico.respaldos(archivo)) {
+            if (PerfilesInicial.esLegible(respaldo)) {
+                return respaldo;
+            }
+        }
+        return null;
+    }
+
+    private static String fechaDe(Path respaldo) {
+        try {
+            LocalDateTime fecha = LocalDateTime.ofInstant(Files.getLastModifiedTime(respaldo).toInstant(), ZoneId.systemDefault());
+            return DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm").format(fecha);
+        } catch (java.io.IOException ex) {
+            return "fecha desconocida";
         }
     }
 

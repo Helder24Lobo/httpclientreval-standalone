@@ -42,7 +42,10 @@ final class FiltroEnvios {
     }
 
     static boolean coincide(EnvioRegistrado envio, String consulta, Estado estado) {
-        if (estado.resultado != null && envio.resultado() != estado.resultado) {
+        if (envio == null) {
+            return false;
+        }
+        if (estado != null && estado.resultado != null && envio.resultado() != estado.resultado) {
             return false;
         }
         return coincide(textoBuscable(envio), consulta);

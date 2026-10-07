@@ -22,6 +22,9 @@ public class SoapResponseParser {
 
     /** Devuelve el texto de OBJRequestResult, o null si el XML no trae ese elemento o no se pudo parsear. */
     public static String extraerObjRequestResult(String xmlRespuesta) {
+        if (xmlRespuesta == null || xmlRespuesta.isBlank()) {
+            return null;
+        }
         try {
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
             factory.setNamespaceAware(true);

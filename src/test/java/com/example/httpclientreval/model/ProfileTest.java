@@ -166,4 +166,14 @@ class ProfileTest {
         assertEquals("999", original.bodyMensajeDefault.idPersona);
         assertNotSame(original.bodyMensajeDefault, copia.bodyMensajeDefault);
     }
+
+    @Test
+    void fromJson_filtraNulosYAsignaNombrePorDefectoSiVieneVacio() {
+        String json = "[null, {\"nombre\":\"\"}, {\"nombre\":\"Valido\"}]";
+        List<Profile> perfiles = Profile.fromJson(json, "prueba");
+
+        assertEquals(2, perfiles.size());
+        assertEquals("Transaccion sin nombre", perfiles.get(0).nombre);
+        assertEquals("Valido", perfiles.get(1).nombre);
+    }
 }

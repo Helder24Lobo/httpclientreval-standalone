@@ -56,13 +56,15 @@ public final class Entornos {
         this.archivo = archivo;
         if (Files.exists(archivo)) {
             try {
-                cargar();
+                cargar(archivo);
                 return;
             } catch (Exception ex) {
-                Registro.error("No se pudo leer " + archivo + "; se apartó y se crean los ambientes base", ex);
+                Registro.error("No se pudo leer " + archivo + "; se aparta y se busca un respaldo", ex);
                 apartarDanado();
-                entornos.clear();
-                activo = null;
+                if (restaurarDeRespaldo()) {
+                    return;
+                }
+                Registro.advertencia("No hay respaldo legible de " + archivo + "; se crean los ambientes base", null);
             }
         }
         crearBase(perfiles == null ? List.of() : perfiles, legado);
@@ -247,18 +249,41 @@ public final class Entornos {
         }
     }
 
-    private void cargar() throws IOException {
-        Archivo leido = GSON.fromJson(Files.readString(archivo), Archivo.class);
+    /** Lee un archivo de ambientes; si no es válido lanza excepción y deja el estado como estaba. */
+    private void cargar(Path origen) throws IOException {
+        Archivo leido = GSON.fromJson(Files.readString(origen), Archivo.class);
         if (leido == null || leido.entornos == null || leido.entornos.isEmpty()) {
             throw new IllegalStateException("no tiene ambientes definidos");
         }
+        List<Entorno> leidos = new ArrayList<>();
         for (Entorno e : leido.entornos) {
-            entornos.add(normalizar(e));
+            leidos.add(normalizar(e));
         }
-        activo = leido.activo;
-        if (buscar(activo) == null) {
-            throw new IllegalStateException("el ambiente activo \"" + activo + "\" no existe");
+        boolean existeActivo = leidos.stream().anyMatch(e -> e.nombre.equalsIgnoreCase(leido.activo == null ? "" : leido.activo.trim()));
+        if (!existeActivo) {
+            throw new IllegalStateException("el ambiente activo \"" + leido.activo + "\" no existe");
         }
+        entornos.clear();
+        entornos.addAll(leidos);
+        activo = leido.activo.trim();
+    }
+
+    /**
+     * Prueba los respaldos de entornos.json del más reciente al más antiguo y se queda con el primero que
+     * se pueda leer, dejándolo como el archivo actual.
+     */
+    private boolean restaurarDeRespaldo() {
+        for (Path respaldo : ArchivoAtomico.respaldos(archivo)) {
+            try {
+                cargar(respaldo);
+                guardarArchivo();
+                Registro.advertencia("Se restauró " + archivo + " desde el respaldo " + respaldo.getFileName(), null);
+                return true;
+            } catch (Exception ex) {
+                Registro.advertencia("El respaldo " + respaldo.getFileName() + " tampoco se puede leer", ex);
+            }
+        }
+        return false;
     }
 
     private void apartarDanado() {

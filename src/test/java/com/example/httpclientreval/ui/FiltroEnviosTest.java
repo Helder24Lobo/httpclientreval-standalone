@@ -37,5 +37,6 @@ class FiltroEnviosTest {
     void sinCoincidenciaDevuelveFalso() {
         assertFalse(FiltroEnvios.coincide(ENVIO, "consignaciones"));
         assertFalse(FiltroEnvios.coincide(null, "algo"));
+        assertFalse(FiltroEnvios.coincide(null, "algo", FiltroEnvios.Estado.TODOS));
     }
 }

@@ -117,6 +117,39 @@ class EntornosTest {
         }
     }
 
+    @Test
+    void unArchivoDanadoSeRecuperaDelUltimoRespaldoEnVezDeVolverALosBase(@TempDir Path tmp) throws Exception {
+        Path archivo = tmp.resolve("entornos.json");
+        Entornos primero = new Entornos(archivo, List.of(perfilConCredenciales()), null);
+        primero.guardar(null, completo("Desarrollo", LLAVE_PROD));
+        primero.guardar("Desarrollo", completo("Desarrollo", LLAVE_PROD));
+        primero.activar("Desarrollo");
+        // El archivo se corrompe (corte de luz, disco, edición a mano...).
+        Files.writeString(archivo, "{ esto no es json");
+
+        Entornos recuperado = new Entornos(archivo, List.of(), null);
+
+        // No empieza de cero: conserva el ambiente que se había creado, con sus credenciales.
+        assertNotNull(recuperado.buscar("Desarrollo"));
+        assertEquals(LLAVE_PROD, recuperado.buscar("Desarrollo").llaveAes);
+        // Y el archivo vuelve a estar sano, listo para el siguiente arranque.
+        assertEquals(recuperado.lista().size(), new Entornos(archivo, List.of(), null).lista().size());
+    }
+
+    @Test
+    void siNingunRespaldoSirveSeCreanLosBase(@TempDir Path tmp) throws Exception {
+        Path archivo = tmp.resolve("entornos.json");
+        new Entornos(archivo, List.of(perfilConCredenciales()), null);
+        Files.writeString(archivo, "{ roto");
+        Files.createDirectories(tmp.resolve("respaldos"));
+        Files.writeString(tmp.resolve("respaldos").resolve("entornos.json.bak1"), "tampoco es json");
+
+        Entornos entornos = new Entornos(archivo, List.of(perfilConCredenciales()), null);
+
+        assertEquals(2, entornos.lista().size());
+        assertEquals(Entornos.NOMBRE_PRUEBAS, entornos.activo().nombre);
+    }
+
     // --- crear y editar ---
 
     @Test

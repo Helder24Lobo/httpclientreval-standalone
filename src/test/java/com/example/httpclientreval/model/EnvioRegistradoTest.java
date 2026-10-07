@@ -90,4 +90,12 @@ class EnvioRegistradoTest {
         assertEquals("Connection refused", e.errorEnvio);
         assertEquals("Sin respuesta", e.resumen());
     }
+
+    @Test
+    void fallaConExcepcionSinMensaje_usaNombreDeLaClase() {
+        EnvioRegistrado e = EnvioRegistrado.fallido(LocalDateTime.now(), perfil(), "<soap/>",
+                new NullPointerException(), 10);
+
+        assertEquals("NullPointerException", e.errorEnvio);
+    }
 }

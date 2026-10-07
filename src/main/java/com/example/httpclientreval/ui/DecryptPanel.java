@@ -28,7 +28,7 @@ public class DecryptPanel extends JPanel {
 
     public DecryptPanel(Profile perfil) {
         super(new BorderLayout(8, 8));
-        this.perfil = perfil;
+        this.perfil = perfil != null ? perfil : new Profile();
         setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 8));
 
         entrada.setLineWrap(true);
@@ -84,8 +84,11 @@ public class DecryptPanel extends JPanel {
             salida.setTexto(jsonPlano);
             statusBanner.mostrarExito("Mensaje descifrado correctamente.");
         } catch (Exception ex) {
-            Registro.error("Error al descifrar con el perfil " + perfil.nombre, ex);
-            statusBanner.mostrarError("Error al descifrar: " + ex.getMessage());
+            String nombre = perfil != null && perfil.nombre != null ? perfil.nombre : "desconocido";
+            Registro.error("Error al descifrar con el perfil " + nombre, ex);
+            String detalle = ex.getMessage() != null && !ex.getMessage().isBlank()
+                    ? ex.getMessage() : ex.getClass().getSimpleName();
+            statusBanner.mostrarError("Error al descifrar: " + detalle);
         }
     }
 

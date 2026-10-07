@@ -1,5 +1,6 @@
 package com.example.httpclientreval.ui;
 
+import com.example.httpclientreval.model.PerfilesInicial;
 import com.example.httpclientreval.model.Profile;
 import com.example.httpclientreval.util.Registro;
 import com.formdev.flatlaf.FlatLaf;
@@ -67,6 +68,9 @@ public class AppWindow extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
         this.perfiles = new ArrayList<>(perfiles);
+        if (this.perfiles.isEmpty()) {
+            this.perfiles.addAll(PerfilesInicial.perfilesDeEjemplo());
+        }
         this.archivoPerfiles = archivoPerfiles;
 
         comboModo = new JComboBox<>(new String[]{"Cifrar (ENCRYPT)", "Descifrar (DECRYPT)"});
@@ -357,14 +361,29 @@ public class AppWindow extends JFrame {
     private void refrescar() {
         centro.removeAll();
 
+        Profile seleccionado = (Profile) comboPerfil.getSelectedItem();
         if (mostrandoNuevaTransaccion) {
             centro.add(new NewProfilePanel(archivoPerfiles, perfiles, this::alGuardarPerfil, this::alCancelarNuevaTransaccion),
                     BorderLayout.CENTER);
+        } else if (seleccionado == null) {
+            JPanel panelVacio = new JPanel(new BorderLayout(8, 8));
+            panelVacio.setBorder(javax.swing.BorderFactory.createEmptyBorder(20, 20, 20, 20));
+            JLabel mensaje = new JLabel("No hay transacciones disponibles en el grupo seleccionado.", JLabel.CENTER);
+            JButton botonCrear = new JButton("Crear nueva transacción", Icons.nuevo());
+            botonCrear.addActionListener(e -> {
+                mostrandoNuevaTransaccion = true;
+                refrescar();
+            });
+            JPanel panelBoton = new JPanel();
+            panelBoton.add(botonCrear);
+            panelVacio.add(mensaje, BorderLayout.CENTER);
+            panelVacio.add(panelBoton, BorderLayout.SOUTH);
+            centro.add(panelVacio, BorderLayout.CENTER);
         } else if (comboModo.getSelectedIndex() == 0) {
-            centro.add(new EncryptPanel((Profile) comboPerfil.getSelectedItem(),
+            centro.add(new EncryptPanel(seleccionado,
                     () -> Profile.saveAll(archivoPerfiles, perfiles)), BorderLayout.CENTER);
         } else {
-            centro.add(new DecryptPanel((Profile) comboPerfil.getSelectedItem()), BorderLayout.CENTER);
+            centro.add(new DecryptPanel(seleccionado), BorderLayout.CENTER);
         }
 
         centro.revalidate();
@@ -475,6 +494,7 @@ public class AppWindow extends JFrame {
             actualizarBotonFavorito();
         } catch (IOException ex) {
             seleccionado.nombre = nombreAnterior;
+            Registro.error("No se pudo renombrar el perfil " + nombreAnterior + " a " + nuevoNombre, ex);
             JOptionPane.showMessageDialog(this,
                     "No se pudo actualizar profiles.json: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
@@ -483,8 +503,11 @@ public class AppWindow extends JFrame {
 
     /** true si algún OTRO perfil (no {@code excepto}) ya tiene ese nombre, sin distinguir mayúsculas. */
     private boolean existeNombre(Profile excepto, String nombre) {
+        if (nombre == null) {
+            return false;
+        }
         for (Profile otro : perfiles) {
-            if (otro != excepto && otro.nombre.equalsIgnoreCase(nombre)) {
+            if (otro != null && otro != excepto && otro.nombre != null && otro.nombre.equalsIgnoreCase(nombre)) {
                 return true;
             }
         }
@@ -514,6 +537,7 @@ public class AppWindow extends JFrame {
             refrescar();
         } catch (IOException ex) {
             perfiles.remove(copia);
+            Registro.error("No se pudo duplicar el perfil " + original.nombre, ex);
             JOptionPane.showMessageDialog(this,
                     "No se pudo actualizar profiles.json: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);
@@ -521,9 +545,10 @@ public class AppWindow extends JFrame {
     }
 
     private String nombreDuplicadoDisponible(String nombreOriginal) {
-        String candidato = nombreOriginal + " (copia)";
+        String base = nombreOriginal == null ? "Transaccion" : nombreOriginal;
+        String candidato = base + " (copia)";
         for (int n = 2; existeNombre(null, candidato); n++) {
-            candidato = nombreOriginal + " (copia " + n + ")";
+            candidato = base + " (copia " + n + ")";
         }
         return candidato;
     }
@@ -561,6 +586,7 @@ public class AppWindow extends JFrame {
             refrescar();
         } catch (IOException ex) {
             perfiles.add(posicion, seleccionado);
+            Registro.error("No se pudo eliminar el perfil " + seleccionado.nombre, ex);
             JOptionPane.showMessageDialog(this,
                     "No se pudo actualizar profiles.json: " + ex.getMessage(),
                     "Error", JOptionPane.ERROR_MESSAGE);

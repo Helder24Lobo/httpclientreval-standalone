@@ -113,6 +113,7 @@ public class AppWindow extends JFrame {
         });
 
         JButton nuevaTransaccion = new JButton("Nueva transacción", Icons.nuevo());
+        nuevaTransaccion.setToolTipText("Crear un nuevo perfil de envío");
         nuevaTransaccion.addActionListener(e -> {
             mostrandoNuevaTransaccion = true;
             refrescar();
@@ -122,10 +123,11 @@ public class AppWindow extends JFrame {
         Atajos.registrar(getRootPane(), Atajos.FAVORITO, this::alternarFavorito);
 
         JButton duplicarPerfil = new JButton("Duplicar", Icons.duplicar());
-        duplicarPerfil.setToolTipText("Crea una copia del perfil seleccionado, lista para editar o renombrar");
+        duplicarPerfil.setToolTipText("Duplicar el perfil seleccionado");
         duplicarPerfil.addActionListener(e -> duplicarPerfilSeleccionado());
 
         JButton renombrarPerfil = new JButton("Renombrar", Icons.editar());
+        renombrarPerfil.setToolTipText("Renombrar el perfil seleccionado");
         renombrarPerfil.addActionListener(e -> renombrarPerfilSeleccionado());
 
         JButton ambientes = new JButton("Ambientes...", Icons.llave());
@@ -133,6 +135,7 @@ public class AppWindow extends JFrame {
         ambientes.addActionListener(e -> abrirAmbientes());
 
         JButton eliminarPerfil = new JButton("Eliminar perfil", Icons.limpiar());
+        eliminarPerfil.setToolTipText("Eliminar el perfil seleccionado");
         eliminarPerfil.addActionListener(e -> eliminarPerfilSeleccionado());
 
         JButton buscarPerfil = new JButton("Buscar", Icons.buscar());
@@ -141,7 +144,7 @@ public class AppWindow extends JFrame {
         Atajos.registrar(getRootPane(), Atajos.BUSCAR, this::buscarPerfil);
 
         JButton historialEnvios = new JButton("Historial", Icons.historial());
-        historialEnvios.setToolTipText("Historial de envíos de la sesión (" + Atajos.texto(Atajos.HISTORIAL) + ")");
+        historialEnvios.setToolTipText("Ver el historial de envíos (" + Atajos.texto(Atajos.HISTORIAL) + ")");
         historialEnvios.addActionListener(e -> abrirHistorial());
         Atajos.registrar(getRootPane(), Atajos.HISTORIAL, this::abrirHistorial);
 

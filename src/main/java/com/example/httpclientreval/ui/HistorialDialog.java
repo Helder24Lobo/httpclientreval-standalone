@@ -33,7 +33,6 @@ import javax.swing.table.AbstractTableModel;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
@@ -502,20 +501,9 @@ final class HistorialDialog extends JDialog {
             EnvioRegistrado envio = (EnvioRegistrado) valor;
             super.getTableCellRendererComponent(t, envio.resumen(), seleccionada, conFoco, fila, columna);
             if (!seleccionada) {
-                setForeground(color(envio.resultado(), getBackground()));
+                setForeground(ColorLegible.deResultado(envio.resultado(), getBackground()));
             }
             return this;
-        }
-
-        private Color color(EnvioRegistrado.Resultado resultado, Color fondo) {
-            switch (resultado) {
-                case EXITO:
-                    return ColorLegible.delTema("Actions.Green", new Color(56, 158, 66), fondo);
-                case ERROR_NEGOCIO:
-                    return ColorLegible.delTema("Actions.Yellow", new Color(230, 120, 0), fondo);
-                default:
-                    return ColorLegible.delTema("Actions.Red", new Color(220, 60, 60), fondo);
-            }
         }
     }
 }

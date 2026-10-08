@@ -51,6 +51,7 @@ public class AppWindow extends JFrame {
 
     private final PerfilesPreferencias preferencias = PerfilesPreferencias.instancia();
     private final AmbienteBanner ambienteBanner = new AmbienteBanner();
+    private final BarraEstado barraEstado = new BarraEstado();
     private final JButton botonFavorito = new JButton();
     private HistorialDialog historialDialog;
     private final List<Profile> perfiles;
@@ -217,6 +218,7 @@ public class AppWindow extends JFrame {
         setLayout(new BorderLayout());
         add(norte, BorderLayout.NORTH);
         add(centro, BorderLayout.CENTER);
+        add(barraEstado, BorderLayout.SOUTH);
 
         cargarGrupos(this.perfiles.get(0).grupo(), this.perfiles.get(0));
         refrescar();
@@ -298,6 +300,8 @@ public class AppWindow extends JFrame {
         } finally {
             actualizandoCombos = false;
         }
+        // Toda alta, baja, duplicado o importación de perfiles termina recargando los grupos: aquí se refleja el total.
+        barraEstado.mostrarTotal(perfiles.size());
         cargarPerfilesDelGrupo((String) comboGrupo.getSelectedItem(), perfilASeleccionar);
     }
 

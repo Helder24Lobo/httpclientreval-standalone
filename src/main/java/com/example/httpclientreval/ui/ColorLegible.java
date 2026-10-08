@@ -1,5 +1,7 @@
 package com.example.httpclientreval.ui;
 
+import com.example.httpclientreval.model.EnvioRegistrado;
+
 import javax.swing.UIManager;
 import java.awt.Color;
 
@@ -17,6 +19,18 @@ final class ColorLegible {
     private static final double PASO = 0.05;
 
     private ColorLegible() {
+    }
+
+    /** Color de cómo terminó un envío (verde éxito, naranja error de negocio, rojo el resto), legible sobre {@code fondo}. */
+    static Color deResultado(EnvioRegistrado.Resultado resultado, Color fondo) {
+        switch (resultado) {
+            case EXITO:
+                return delTema("Actions.Green", new Color(56, 158, 66), fondo);
+            case ERROR_NEGOCIO:
+                return delTema("Actions.Yellow", new Color(230, 120, 0), fondo);
+            default:
+                return delTema("Actions.Red", new Color(220, 60, 60), fondo);
+        }
     }
 
     /** Color de {@code claveTema} (o {@code respaldo} si el look and feel no la define) ajustado para leerse sobre {@code fondo}. */

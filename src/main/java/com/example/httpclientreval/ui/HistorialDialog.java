@@ -490,7 +490,11 @@ final class HistorialDialog extends JDialog {
         }
     }
 
-    /** Pinta el resultado con un color según cómo terminó, sin perder el contraste al seleccionar la fila. */
+    /**
+     * Pinta el resultado con un color según cómo terminó, sin perder el contraste al seleccionar la fila.
+     * Los colores salen del tema activo (se leen al pintar, así que siguen el cambio claro/oscuro en
+     * caliente) y se ajustan al fondo real de la celda, incluidas las filas alternas.
+     */
     private final class RenderizadorResultado extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable t, Object valor, boolean seleccionada,
@@ -498,19 +502,19 @@ final class HistorialDialog extends JDialog {
             EnvioRegistrado envio = (EnvioRegistrado) valor;
             super.getTableCellRendererComponent(t, envio.resumen(), seleccionada, conFoco, fila, columna);
             if (!seleccionada) {
-                setForeground(color(envio.resultado()));
+                setForeground(color(envio.resultado(), getBackground()));
             }
             return this;
         }
 
-        private Color color(EnvioRegistrado.Resultado resultado) {
+        private Color color(EnvioRegistrado.Resultado resultado, Color fondo) {
             switch (resultado) {
                 case EXITO:
-                    return new Color(56, 158, 66);
+                    return ColorLegible.delTema("Actions.Green", new Color(56, 158, 66), fondo);
                 case ERROR_NEGOCIO:
-                    return new Color(230, 120, 0);
+                    return ColorLegible.delTema("Actions.Yellow", new Color(230, 120, 0), fondo);
                 default:
-                    return new Color(220, 60, 60);
+                    return ColorLegible.delTema("Actions.Red", new Color(220, 60, 60), fondo);
             }
         }
     }

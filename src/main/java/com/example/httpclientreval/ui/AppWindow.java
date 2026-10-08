@@ -90,6 +90,9 @@ public class AppWindow extends JFrame {
             }
         });
 
+        // Cada grupo muestra cuántas transacciones tiene (Favoritos/Recientes también); el ítem sigue siendo el nombre solo.
+        ConteoGrupos.mostrarConteo(comboGrupo, g -> perfilesDelGrupo(g).size());
+
         comboGrupo.addActionListener(e -> {
             if (actualizandoCombos) {
                 return;
@@ -437,6 +440,7 @@ public class AppWindow extends JFrame {
             comboRenombrarGrupo.addItem(g);
         }
         comboRenombrarGrupo.setSelectedItem(seleccionado.grupo());
+        ConteoGrupos.mostrarConteo(comboRenombrarGrupo, g -> ConteoGrupos.contar(perfiles, g));
 
         JLabel lblTransaccion = new JLabel("Transacción:");
         JTextField campoTransaccion = new JTextField(seleccionado.detalle(), 22);
@@ -467,7 +471,7 @@ public class AppWindow extends JFrame {
         }
 
         String grupo = comboRenombrarGrupo.getEditor().getItem() != null
-                ? comboRenombrarGrupo.getEditor().getItem().toString().trim() : "";
+                ? ConteoGrupos.nombreBase(comboRenombrarGrupo.getEditor().getItem().toString(), perfiles) : "";
         String detalle = campoTransaccion.getText().trim();
 
         if (grupo.isEmpty() || detalle.isEmpty()) {

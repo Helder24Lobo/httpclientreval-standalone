@@ -120,6 +120,7 @@ public class NewProfilePanel extends JPanel {
         if (comboGrupo.getItemCount() > 0) {
             comboGrupo.setSelectedIndex(0);
         }
+        ConteoGrupos.mostrarConteo(comboGrupo, g -> ConteoGrupos.contar(perfiles, g));
         comboGrupo.setToolTipText("Selecciona un grupo existente o escribe uno nuevo");
         Accesibilidad.etiquetar(rotuloGrupo, comboGrupo, "Grupo");
         Component editor = comboGrupo.getEditor().getEditorComponent();
@@ -191,7 +192,7 @@ public class NewProfilePanel extends JPanel {
     private void guardar() {
         try {
             String grupo = comboGrupo.getEditor().getItem() != null
-                    ? comboGrupo.getEditor().getItem().toString().trim() : "";
+                    ? ConteoGrupos.nombreBase(comboGrupo.getEditor().getItem().toString(), perfiles) : "";
             String transaccion = campos.get("Transacción").getText().trim();
 
             if (grupo.isEmpty()) {

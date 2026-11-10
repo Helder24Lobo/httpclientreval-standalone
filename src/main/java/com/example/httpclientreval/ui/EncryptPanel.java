@@ -46,6 +46,8 @@ public class EncryptPanel extends JPanel {
     private final OutputBlock salidaMensaje = new OutputBlock("_mensaje (Base64)");
     private final OutputBlock salidaSobre = new OutputBlock("Sobre JSON");
     private final OutputBlock salidaSoap = new OutputBlock("XML SOAP (Postman)");
+    /** El mensaje de negocio en claro, antes de cifrarlo: lo que realmente se envía (el espejo de "Respuesta en claro"). */
+    private final OutputBlock salidaNegocioPlano = new OutputBlock("Mensaje de negocio (JSON en claro)");
     {
         // La app nace para reemplazar Postman: este bloque siempre trae exactamente lo que se envía al WS.
         salidaSoap.habilitarCopiarCurl(() -> SoapHttpClient.curlPara(salidaSoap.getTexto()));
@@ -137,6 +139,7 @@ public class EncryptPanel extends JPanel {
         tabsPeticion.addTab("_mensaje", salidaMensaje);
         tabsPeticion.addTab("Sobre", salidaSobre);
         tabsPeticion.addTab("XML SOAP", salidaSoap);
+        tabsPeticion.addTab("JSON en claro", salidaNegocioPlano);
 
         JTabbedPane tabsRespuesta = new JTabbedPane();
         Accesibilidad.nombrar(tabsRespuesta, "Respuesta del servicio");
@@ -241,6 +244,7 @@ public class EncryptPanel extends JPanel {
             salidaMensaje.setTexto(mensajeCifrado);
             salidaSobre.setTexto(sobreCompleto);
             salidaSoap.setTexto(soapCompleto);
+            salidaNegocioPlano.setTexto(jsonNegocio);
             ultimoSoapGenerado = soapCompleto;
             firmaEntornoGenerado = SoapHttpClient.entornoActivo().firma();
             statusBanner.mostrarExito("Petición SOAP generada correctamente.");
@@ -509,6 +513,7 @@ public class EncryptPanel extends JPanel {
         salidaMensaje.setTexto("");
         salidaSobre.setTexto("");
         salidaSoap.setTexto("");
+        salidaNegocioPlano.setTexto("");
         salidaHttp.setTexto("");
         salidaHttp.ocultarBadge();
         salidaResultCifrado.setTexto("");

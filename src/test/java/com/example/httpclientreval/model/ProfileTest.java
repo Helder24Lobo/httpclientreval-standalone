@@ -68,10 +68,10 @@ class ProfileTest {
 
     @Test
     void grupoYDetalle_seSeparanPorElPrimerGuion() {
-        Profile p = conNombre("Compra pines - Consulta paquetes de contenido digital");
+        Profile p = conNombre("Compra pines - Consulta Movii Digital o Movii Operadores");
 
         assertEquals("Compra pines", p.grupo());
-        assertEquals("Consulta paquetes de contenido digital", p.detalle());
+        assertEquals("Consulta Movii Digital o Movii Operadores", p.detalle());
     }
 
     @Test
